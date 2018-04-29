@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+    <Type Name="String_Manager">
+        <DisplayString>Strings :: {set_size}</DisplayString>
+        <Expand>
+            <Synthetic Name="[Buffer]">
+                <Expand>
+                    <ArrayItems>
+                        <Size>buffer_size</Size>
+                        <ValuePointer>buffer</ValuePointer>
+                    </ArrayItems>
+                </Expand>
+            </Synthetic>
+            <Synthetic Name="[Table]">
+                <Expand>
+                    <ArrayItems>
+                        <Size>set_capacity</Size>
+                        <ValuePointer>set</ValuePointer>
+                    </ArrayItems>
+                </Expand>
+            </Synthetic>
+        </Expand>
+    </Type>
+
+    <Type Name="String">
+        <DisplayString>
+            {manager.buffer + index, s8}
+        </DisplayString>
+        <Expand>
+            <Item Name="[Manager]">manager</Item>
+            <Item Name="[Hash]">hash,X</Item>
+        </Expand>
+    </Type>
+
+</AutoVisualizer>
