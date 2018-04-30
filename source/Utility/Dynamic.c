@@ -1,8 +1,6 @@
 #include <Utility/Dynamic.h>
 #include <Windows.h>
 
-typedef void Library;
-
 Library* Library_load(String path)
 {
     return LoadLibrary(String_begin(path));

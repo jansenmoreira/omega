@@ -1,10 +1,11 @@
 #include <Interpreter/Types.h>
 
-Type_Integer *Type_Integer_create(size_t size, int is_signed)
+Type_Integer* Type_Integer_create(size_t size, int is_signed)
 {
-    Type_Integer *self = (Type_Integer *)malloc(sizeof(Type_Integer));
+    Type_Integer* self = (Type_Integer*)malloc(sizeof(Type_Integer));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_INTEGER;
     self->size = size;
@@ -12,34 +13,24 @@ Type_Integer *Type_Integer_create(size_t size, int is_signed)
     return self;
 }
 
-Type_Float *Type_Float_create(size_t size)
+Type_Float* Type_Float_create(size_t size)
 {
-    Type_Float *self = (Type_Float *)malloc(sizeof(Type_Float));
+    Type_Float* self = (Type_Float*)malloc(sizeof(Type_Float));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_FLOAT;
     self->size = size;
     return self;
 }
 
-Type_Alias *Type_Alias_create(String id, Type *type)
+Type_Array* Type_Array_create(Type* type, size_t size)
 {
-    Type_Alias *self = (Type_Alias *)malloc(sizeof(Type_Alias));
+    Type_Array* self = (Type_Array*)malloc(sizeof(Type_Array));
 
-    if (!self) Panic(Memory_Error);
-
-    self->type_id = TYPE_ALIAS;
-    self->type = type;
-    self->id = id;
-    return self;
-}
-
-Type_Array *Type_Array_create(Type *type, size_t size)
-{
-    Type_Array *self = (Type_Array *)malloc(sizeof(Type_Array));
-
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_ARRAY;
     self->type = type;
@@ -47,172 +38,246 @@ Type_Array *Type_Array_create(Type *type, size_t size)
     return self;
 }
 
-Type_Pointer *Type_Pointer_create(Type *type)
+Type_Pointer* Type_Pointer_create(Type* type)
 {
-    Type_Pointer *self = (Type_Pointer *)malloc(sizeof(Type_Pointer));
+    Type_Pointer* self = (Type_Pointer*)malloc(sizeof(Type_Pointer));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_POINTER;
     self->type = type;
     return self;
 }
 
-Type_Tuple *Type_Tuple_create()
+Type_Tuple* Type_Tuple_create()
 {
-    Type_Tuple *self = (Type_Tuple *)malloc(sizeof(Type_Tuple));
+    Type_Tuple* self = (Type_Tuple*)malloc(sizeof(Type_Tuple));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_TUPLE;
-    self->fields = STACK_CREATE(Type *);
+    self->fields = STACK_CREATE(Type*);
     return self;
 }
 
-Type_Struct *Type_Struct_create()
+Type_Struct* Type_Struct_create()
 {
-    Type_Struct *self = (Type_Struct *)malloc(sizeof(Type_Struct));
+    Type_Struct* self = (Type_Struct*)malloc(sizeof(Type_Struct));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_STRUCT;
-    self->fields = STACK_CREATE(Type *);
+    self->fields = STACK_CREATE(Type*);
     self->ids = STACK_CREATE(String);
     return self;
 }
 
-Type_Function *Type_Function_create()
+Type_Function* Type_Function_create()
 {
-    Type_Function *self = (Type_Function *)malloc(sizeof(Type_Function));
+    Type_Function* self = (Type_Function*)malloc(sizeof(Type_Function));
 
-    if (!self) Panic(Memory_Error);
+    if (!self)
+        Panic(Memory_Error);
 
     self->type_id = TYPE_FUNCTION;
-    self->params = STACK_CREATE(Type *);
+    self->params = STACK_CREATE(Type*);
     return self;
 }
 
-void Type_Integer_destroy(Type_Integer *self) { free(self); }
+void Type_Integer_destroy(Type_Integer* self)
+{
+    free(self);
+}
 
-void Type_Float_destroy(Type_Float *self) { free(self); }
+void Type_Float_destroy(Type_Float* self)
+{
+    free(self);
+}
 
-void Type_Alias_destroy(Type_Alias *self) { free(self); }
-
-void Type_Array_destroy(Type_Array *self)
+void Type_Array_destroy(Type_Array* self)
 {
     Type_destroy(self->type);
     free(self);
 }
 
-void Type_Pointer_destroy(Type_Pointer *self)
+void Type_Pointer_destroy(Type_Pointer* self)
 {
     Type_destroy(self->type);
     free(self);
 }
 
-void Type_Tuple_destroy(Type_Tuple *self)
+void Type_Tuple_destroy(Type_Tuple* self)
 {
     for (size_t i = 0; i < self->fields.size; i++)
     {
-        Type_destroy(STACK_GET(Type *, self->fields, i));
+        Type_destroy(STACK_GET(Type*, self->fields, i));
     }
 
-    STACK_DESTROY(Type *, self->fields);
+    STACK_DESTROY(Type*, self->fields);
     free(self);
 }
 
-void Type_Struct_destroy(Type_Struct *self)
+void Type_Struct_destroy(Type_Struct* self)
 {
     for (size_t i = 0; i < self->fields.size; i++)
     {
-        Type_destroy(STACK_GET(Type *, self->fields, i));
+        Type_destroy(STACK_GET(Type*, self->fields, i));
     }
 
-    STACK_DESTROY(Type *, self->fields);
+    STACK_DESTROY(Type*, self->fields);
     STACK_DESTROY(String, self->ids);
     free(self);
 }
 
-void Type_Function_destroy(Type_Function *self)
+void Type_Function_destroy(Type_Function* self)
 {
     for (size_t i = 0; i < self->params.size; i++)
     {
-        Type_destroy(STACK_GET(Type *, self->params, i));
+        Type_destroy(STACK_GET(Type*, self->params, i));
     }
 
-    STACK_DESTROY(Type *, self->params);
+    STACK_DESTROY(Type*, self->params);
     free(self);
 }
 
-void Type_destroy(Type *type)
+void Type_destroy(Type* type)
 {
     switch (type->type_id)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer_destroy((Type_Integer *)type);
+            Type_Integer_destroy((Type_Integer*)type);
             break;
         }
         case TYPE_FLOAT:
         {
-            Type_Float_destroy((Type_Float *)type);
-            break;
-        }
-        case TYPE_ALIAS:
-        {
-            Type_Alias_destroy((Type_Alias *)type);
+            Type_Float_destroy((Type_Float*)type);
             break;
         }
         case TYPE_ARRAY:
         {
-            Type_Array_destroy((Type_Array *)type);
+            Type_Array_destroy((Type_Array*)type);
             break;
         }
         case TYPE_POINTER:
         {
-            Type_Pointer_destroy((Type_Pointer *)type);
+            Type_Pointer_destroy((Type_Pointer*)type);
             break;
         }
         case TYPE_TUPLE:
         {
-            Type_Tuple_destroy((Type_Tuple *)type);
+            Type_Tuple_destroy((Type_Tuple*)type);
             break;
         }
         case TYPE_STRUCT:
         {
-            Type_Struct_destroy((Type_Struct *)type);
+            Type_Struct_destroy((Type_Struct*)type);
             break;
         }
         case TYPE_FUNCTION:
         {
-            Type_Function_destroy((Type_Function *)type);
+            Type_Function_destroy((Type_Function*)type);
             break;
         }
     }
 }
 
-size_t Type_size(Type *type)
+Type* Type_Copy(Type* type)
 {
     switch (type->type_id)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer *casted = (Type_Integer *)type;
+            Type_Integer* casted = (Type_Integer*)type;
+            return (Type*)Type_Integer_create(casted->size, casted->is_signed);
+        }
+        case TYPE_FLOAT:
+        {
+            Type_Float* casted = (Type_Float*)type;
+            return (Type*)Type_Float_create(casted->size);
+        }
+        case TYPE_ARRAY:
+        {
+            Type_Array* casted = (Type_Array*)type;
+            return (Type*)Type_Array_create(Type_Copy(casted->type),
+                                            casted->size);
+        }
+        case TYPE_POINTER:
+        {
+            Type_Pointer* casted = (Type_Pointer*)type;
+            return (Type*)Type_Pointer_create(Type_Copy(casted->type));
+        }
+        case TYPE_TUPLE:
+        {
+            Type_Tuple* casted = (Type_Tuple*)type;
+            Type_Tuple* copy = Type_Tuple_create();
+
+            for (size_t i = 1; i < casted->fields.size; i++)
+            {
+                Type* field = Type_Copy(STACK_GET(Type*, casted->fields, i));
+                STACK_PUSH(Type*, copy->fields, field);
+            }
+
+            return (Type*)copy;
+        }
+        case TYPE_STRUCT:
+        {
+            Type_Struct* casted = (Type_Struct*)type;
+            Type_Struct* copy = Type_Struct_create();
+
+            for (size_t i = 1; i < casted->fields.size; i++)
+            {
+                Type* field_type =
+                    Type_Copy(STACK_GET(Type*, casted->fields, i));
+
+                String field_name = STACK_GET(String, casted->ids, i);
+
+                STACK_PUSH(Type*, copy->fields, field_type);
+                STACK_PUSH(String, copy->ids, field_name);
+            }
+
+            return (Type*)copy;
+        }
+        case TYPE_FUNCTION:
+        {
+            Type_Function* casted = (Type_Function*)type;
+            Type_Function* copy = Type_Function_create();
+            copy->return_type = Type_Copy(casted->return_type);
+
+            for (size_t i = 1; i < casted->params.size; i++)
+            {
+                Type* field = Type_Copy(STACK_GET(Type*, casted->params, i));
+                STACK_PUSH(Type*, copy->params, field);
+            }
+
+            return (Type*)copy;
+        }
+    }
+
+    assert(False && "Type must be one of Type_ID enum values.");
+    return NULL;
+}
+
+size_t Type_size(Type* type)
+{
+    switch (type->type_id)
+    {
+        case TYPE_INTEGER:
+        {
+            Type_Integer* casted = (Type_Integer*)type;
             return casted->size;
         }
         case TYPE_FLOAT:
         {
-            Type_Float *casted = (Type_Float *)type;
+            Type_Float* casted = (Type_Float*)type;
             return casted->size;
-        }
-        case TYPE_ALIAS:
-        {
-            Type_Alias *casted = (Type_Alias *)type;
-            return Type_size(casted->type);
         }
         case TYPE_ARRAY:
         {
-            Type_Array *casted = (Type_Array *)type;
+            Type_Array* casted = (Type_Array*)type;
             return casted->size * Type_size(casted->type);
         }
         case TYPE_POINTER:
@@ -221,26 +286,26 @@ size_t Type_size(Type *type)
         }
         case TYPE_TUPLE:
         {
-            Type_Tuple *casted = (Type_Tuple *)type;
+            Type_Tuple* casted = (Type_Tuple*)type;
 
             size_t size = 0;
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
-                size += Type_size(STACK_GET(Type *, casted->fields, i));
+                size += Type_size(STACK_GET(Type*, casted->fields, i));
             }
 
             return size;
         }
         case TYPE_STRUCT:
         {
-            Type_Struct *casted = (Type_Struct *)type;
+            Type_Struct* casted = (Type_Struct*)type;
 
             size_t size = 0;
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
-                size += Type_size(STACK_GET(Type *, casted->fields, i));
+                size += Type_size(STACK_GET(Type*, casted->fields, i));
             }
 
             return size;
@@ -256,21 +321,8 @@ size_t Type_size(Type *type)
     }
 }
 
-Type *Type_dereference(Type *type)
+Boolean Type_equal(Type* a, Type* b)
 {
-    if (type->type_id == TYPE_ALIAS)
-    {
-        return Type_dereference(((Type_Alias *)type)->type);
-    }
-
-    return type;
-}
-
-Boolean Type_equal(Type *a, Type *b)
-{
-    a = Type_dereference(a);
-    b = Type_dereference(b);
-
     switch (a->type_id)
     {
         case TYPE_INTEGER:
@@ -280,8 +332,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Integer *ac = (Type_Integer *)a;
-            Type_Integer *bc = (Type_Integer *)b;
+            Type_Integer* ac = (Type_Integer*)a;
+            Type_Integer* bc = (Type_Integer*)b;
             return ac->size == bc->size && ac->is_signed == bc->is_signed;
         }
         case TYPE_FLOAT:
@@ -291,8 +343,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Float *ac = (Type_Float *)a;
-            Type_Float *bc = (Type_Float *)b;
+            Type_Float* ac = (Type_Float*)a;
+            Type_Float* bc = (Type_Float*)b;
             return ac->size == bc->size;
         }
         case TYPE_ARRAY:
@@ -302,8 +354,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Array *ac = (Type_Array *)a;
-            Type_Array *bc = (Type_Array *)b;
+            Type_Array* ac = (Type_Array*)a;
+            Type_Array* bc = (Type_Array*)b;
             return ac->size == bc->size && Type_equal(ac->type, bc->type);
         }
         case TYPE_POINTER:
@@ -313,8 +365,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Pointer *ac = (Type_Pointer *)a;
-            Type_Pointer *bc = (Type_Pointer *)b;
+            Type_Pointer* ac = (Type_Pointer*)a;
+            Type_Pointer* bc = (Type_Pointer*)b;
             return Type_equal(ac->type, bc->type);
         }
         case TYPE_TUPLE:
@@ -324,8 +376,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Tuple *ac = (Type_Tuple *)a;
-            Type_Tuple *bc = (Type_Tuple *)b;
+            Type_Tuple* ac = (Type_Tuple*)a;
+            Type_Tuple* bc = (Type_Tuple*)b;
 
             if (ac->fields.size != bc->fields.size)
             {
@@ -334,8 +386,8 @@ Boolean Type_equal(Type *a, Type *b)
 
             for (size_t i = 0; i < ac->fields.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type *, ac->fields, i),
-                                STACK_GET(Type *, bc->fields, i)))
+                if (!Type_equal(STACK_GET(Type*, ac->fields, i),
+                                STACK_GET(Type*, bc->fields, i)))
                 {
                     return False;
                 }
@@ -350,8 +402,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Struct *ac = (Type_Struct *)a;
-            Type_Struct *bc = (Type_Struct *)b;
+            Type_Struct* ac = (Type_Struct*)a;
+            Type_Struct* bc = (Type_Struct*)b;
 
             if (ac->fields.size != bc->fields.size)
             {
@@ -360,8 +412,8 @@ Boolean Type_equal(Type *a, Type *b)
 
             for (size_t i = 0; i < ac->fields.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type *, ac->fields, i),
-                                STACK_GET(Type *, bc->fields, i)) ||
+                if (!Type_equal(STACK_GET(Type*, ac->fields, i),
+                                STACK_GET(Type*, bc->fields, i)) ||
                     !String_equal(STACK_GET(String, ac->ids, i),
                                   STACK_GET(String, bc->ids, i)))
                 {
@@ -378,8 +430,8 @@ Boolean Type_equal(Type *a, Type *b)
                 return False;
             }
 
-            Type_Function *ac = (Type_Function *)a;
-            Type_Function *bc = (Type_Function *)b;
+            Type_Function* ac = (Type_Function*)a;
+            Type_Function* bc = (Type_Function*)b;
 
             if (!Type_equal(ac->return_type, bc->return_type))
             {
@@ -393,8 +445,8 @@ Boolean Type_equal(Type *a, Type *b)
 
             for (size_t i = 0; i < ac->params.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type *, ac->params, i),
-                                STACK_GET(Type *, bc->params, i)))
+                if (!Type_equal(STACK_GET(Type*, ac->params, i),
+                                STACK_GET(Type*, bc->params, i)))
                 {
                     return False;
                 }
@@ -409,13 +461,13 @@ Boolean Type_equal(Type *a, Type *b)
     }
 }
 
-void Type_print(Type *type)
+void Type_print(Type* type)
 {
     switch (type->type_id)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer *casted = (Type_Integer *)type;
+            Type_Integer* casted = (Type_Integer*)type;
 
             switch (casted->size)
             {
@@ -445,42 +497,36 @@ void Type_print(Type *type)
         }
         case TYPE_FLOAT:
         {
-            Type_Float *casted = (Type_Float *)type;
+            Type_Float* casted = (Type_Float*)type;
             Print("%s", casted->size == 4 ? "fp32" : "fp64");
-            break;
-        }
-        case TYPE_ALIAS:
-        {
-            Type_Alias *casted = (Type_Alias *)type;
-            Print("%s", String_begin(casted->id));
             break;
         }
         case TYPE_ARRAY:
         {
-            Type_Array *casted = (Type_Array *)type;
+            Type_Array* casted = (Type_Array*)type;
             Print("[%llu]", casted->size);
             Type_print(casted->type);
             break;
         }
         case TYPE_POINTER:
         {
-            Type_Pointer *casted = (Type_Pointer *)type;
+            Type_Pointer* casted = (Type_Pointer*)type;
             Print("*");
             Type_print(casted->type);
             break;
         }
         case TYPE_TUPLE:
         {
-            Type_Tuple *casted = (Type_Tuple *)type;
+            Type_Tuple* casted = (Type_Tuple*)type;
 
             Print("[");
 
-            Type_print(STACK_GET(Type *, casted->fields, 0));
+            Type_print(STACK_GET(Type*, casted->fields, 0));
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type *, casted->fields, i));
+                Type_print(STACK_GET(Type*, casted->fields, i));
             }
 
             Print("]");
@@ -489,16 +535,16 @@ void Type_print(Type *type)
         }
         case TYPE_STRUCT:
         {
-            Type_Struct *casted = (Type_Struct *)type;
+            Type_Struct* casted = (Type_Struct*)type;
 
             Print("{");
 
-            Type_print(STACK_GET(Type *, casted->fields, 0));
+            Type_print(STACK_GET(Type*, casted->fields, 0));
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type *, casted->fields, i));
+                Type_print(STACK_GET(Type*, casted->fields, i));
             }
 
             Print("}");
@@ -507,16 +553,16 @@ void Type_print(Type *type)
         }
         case TYPE_FUNCTION:
         {
-            Type_Function *casted = (Type_Function *)type;
+            Type_Function* casted = (Type_Function*)type;
 
             Print("(");
 
-            Type_print(STACK_GET(Type *, casted->params, 0));
+            Type_print(STACK_GET(Type*, casted->params, 0));
 
             for (size_t i = 1; i < casted->params.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type *, casted->params, i));
+                Type_print(STACK_GET(Type*, casted->params, i));
             }
 
             Print(" -> ");
@@ -530,15 +576,13 @@ void Type_print(Type *type)
     }
 }
 
-void Type_print_value(Type *type, void *value)
+void Type_print_value(Type* type, void* value)
 {
-    type = Type_dereference(type);
-
     switch (type->type_id)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer *casted = (Type_Integer *)type;
+            Type_Integer* casted = (Type_Integer*)type;
 
             switch (casted->size)
             {
@@ -546,11 +590,11 @@ void Type_print_value(Type *type, void *value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu8, *((u8 *)value));
+                        Print("%" PRIu8, *((u8*)value));
                     }
                     else
                     {
-                        Print("%" PRIi8, *((s8 *)value));
+                        Print("%" PRIi8, *((s8*)value));
                     }
 
                     break;
@@ -559,11 +603,11 @@ void Type_print_value(Type *type, void *value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu16, *((u16 *)value));
+                        Print("%" PRIu16, *((u16*)value));
                     }
                     else
                     {
-                        Print("%" PRIi16, *((s16 *)value));
+                        Print("%" PRIi16, *((s16*)value));
                     }
 
                     break;
@@ -572,11 +616,11 @@ void Type_print_value(Type *type, void *value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu32, *((u32 *)value));
+                        Print("%" PRIu32, *((u32*)value));
                     }
                     else
                     {
-                        Print("%" PRIi32, *((s32 *)value));
+                        Print("%" PRIi32, *((s32*)value));
                     }
 
                     break;
@@ -585,11 +629,11 @@ void Type_print_value(Type *type, void *value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu64, *((u64 *)value));
+                        Print("%" PRIu64, *((u64*)value));
                     }
                     else
                     {
-                        Print("%" PRIi64, *((s64 *)value));
+                        Print("%" PRIi64, *((s64*)value));
                     }
 
                     break;
@@ -600,18 +644,18 @@ void Type_print_value(Type *type, void *value)
         }
         case TYPE_FLOAT:
         {
-            Type_Float *casted = (Type_Float *)type;
+            Type_Float* casted = (Type_Float*)type;
 
             switch (casted->size)
             {
                 case 4:
                 {
-                    Print("%f", *((float *)value));
+                    Print("%f", *((float*)value));
                     break;
                 }
                 case 8:
                 {
-                    Print("%lf", *((double *)value));
+                    Print("%lf", *((double*)value));
                     break;
                 }
             }
@@ -620,14 +664,14 @@ void Type_print_value(Type *type, void *value)
         }
         case TYPE_ARRAY:
         {
-            Type_Array *casted = (Type_Array *)type;
+            Type_Array* casted = (Type_Array*)type;
 
             Print("[ ");
 
             for (size_t i = 0; i < casted->size; i++)
             {
                 Type_print_value(casted->type, value);
-                value = ((u8 *)value) + Type_size(casted->type);
+                value = ((u8*)value) + Type_size(casted->type);
                 Print(", ");
             }
 
@@ -643,15 +687,15 @@ void Type_print_value(Type *type, void *value)
         }
         case TYPE_TUPLE:
         {
-            Type_Tuple *casted = (Type_Tuple *)type;
+            Type_Tuple* casted = (Type_Tuple*)type;
 
             Print("[ ");
 
             for (size_t i = 0; i < casted->fields.size; i++)
             {
-                Type *field_type = STACK_GET(Type *, casted->fields, i);
+                Type* field_type = STACK_GET(Type*, casted->fields, i);
                 Type_print_value(field_type, value);
-                value = ((u8 *)value) + Type_size(field_type);
+                value = ((u8*)value) + Type_size(field_type);
                 Print(", ");
             }
 
@@ -660,16 +704,16 @@ void Type_print_value(Type *type, void *value)
         }
         case TYPE_STRUCT:
         {
-            Type_Struct *casted = (Type_Struct *)type;
+            Type_Struct* casted = (Type_Struct*)type;
 
             Print("{ ");
 
             for (size_t i = 0; i < casted->fields.size; i++)
             {
                 Print("%s : ", String_begin(STACK_GET(String, casted->ids, i)));
-                Type *field_type = STACK_GET(Type *, casted->fields, i);
+                Type* field_type = STACK_GET(Type*, casted->fields, i);
                 Type_print_value(field_type, value);
-                value = ((u8 *)value) + Type_size(field_type);
+                value = ((u8*)value) + Type_size(field_type);
                 Print(", ");
             }
 

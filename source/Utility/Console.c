@@ -9,7 +9,8 @@ enum
 
 static char* Read_Fallback()
 {
-    if (feof(stdin)) return NULL;
+    if (feof(stdin))
+        return NULL;
 
     char* line = NULL;
     size_t line_size = 1;
@@ -39,7 +40,7 @@ static char* Read_Fallback()
     return line;
 }
 
-char* Read()
+MEMORY(char*) Read()
 {
     switch (GetFileType(GetStdHandle(STD_INPUT_HANDLE)))
     {

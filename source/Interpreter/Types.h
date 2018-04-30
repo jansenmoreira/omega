@@ -8,7 +8,6 @@ typedef enum Type_ID
 {
     TYPE_INTEGER,
     TYPE_FLOAT,
-    TYPE_ALIAS,
     TYPE_ARRAY,
     TYPE_POINTER,
     TYPE_TUPLE,
@@ -36,19 +35,11 @@ typedef struct Type_Integer
     int is_signed;
 } Type_Integer;
 
-typedef struct Type_Alias
-{
-    Type_ID type_id;
-
-    String id;
-    Type *type;
-} Type_Alias;
-
 typedef struct Type_Array
 {
     Type_ID type_id;
 
-    Type *type;
+    Type* type;
     size_t size;
 } Type_Array;
 
@@ -56,21 +47,21 @@ typedef struct Type_Pointer
 {
     Type_ID type_id;
 
-    Type *type;
+    Type* type;
 } Type_Pointer;
 
 typedef struct Type_Tuple
 {
     Type_ID type_id;
 
-    STACK(Type *) fields;
+    STACK(Type*) fields;
 } Type_Tuple;
 
 typedef struct Type_Struct
 {
     Type_ID type_id;
 
-    STACK(Type *) fields;
+    STACK(Type*) fields;
     STACK(String) ids;
 } Type_Struct;
 
@@ -78,29 +69,28 @@ typedef struct Type_Function
 {
     Type_ID type_id;
 
-    STACK(Type *) params;
-    Type *return_type;
+    STACK(Type*) params;
+    Type* return_type;
 } Type_Function;
 
-Type_Integer *Type_Integer_create(size_t size, int is_signed);
-Type_Float *Type_Float_create(size_t size);
-Type_Alias *Type_Alias_create(String id, Type *type);
-Type_Array *Type_Array_create(Type *type, size_t size);
-Type_Pointer *Type_Pointer_create(Type *type);
-Type_Struct *Type_Struct_create();
-Type_Tuple *Type_Tuple_create();
-Type_Function *Type_Function_create();
+Type_Integer* Type_Integer_create(size_t size, int is_signed);
+Type_Float* Type_Float_create(size_t size);
+Type_Array* Type_Array_create(Type* type, size_t size);
+Type_Pointer* Type_Pointer_create(Type* type);
+Type_Struct* Type_Struct_create();
+Type_Tuple* Type_Tuple_create();
+Type_Function* Type_Function_create();
 
-void Type_destroy(Type *type);
+Type* Type_Copy(Type* type);
 
-size_t Type_size(Type *type);
+void Type_destroy(Type* type);
 
-Type *Type_dereference(Type *type);
+size_t Type_size(Type* type);
 
-Boolean Type_equal(Type *a, Type *b);
+Boolean Type_equal(Type* a, Type* b);
 
-void Type_print(Type *type);
+void Type_print(Type* type);
 
-void Type_print_value(Type *type, void *value);
+void Type_print_value(Type* type, void* value);
 
 #endif

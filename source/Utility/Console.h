@@ -3,10 +3,10 @@
 
 #include <Utility/Standard.h>
 
-Memory(char *) Read();
+MEMORY(char*) Read();
 
-Boolean Error(const char *format, ...);
+Boolean Error(const char* format, ...);
 
-Boolean Print(const char *format, ...);
+Boolean Print(const char* format, ...);
 
 #endif

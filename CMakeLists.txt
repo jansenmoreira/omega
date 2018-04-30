@@ -26,6 +26,8 @@ add_executable(
     source/Interpreter/Expression.h
     source/Interpreter/Lexer.c
     source/Interpreter/Lexer.h
+    source/Interpreter/Machine.c
+    source/Interpreter/Machine.h
     source/Interpreter/Interpreter.c
     source/Interpreter/Interpreter.h
 

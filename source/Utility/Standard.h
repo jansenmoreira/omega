@@ -29,6 +29,6 @@ typedef enum Boolean
     True
 } Boolean;
 
-#define Memory(T) T
+#define MEMORY(T) T
 
 #endif
