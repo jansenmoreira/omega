@@ -1,10 +1,11 @@
 #include <Interpreter/Interpreter.h>
+#include <Interpreter/Machine.h>
 
-/*
 typedef struct Interpreter
 {
     Lexer* lexer;
     Token token;
+    Machine machine;
 
     STACK(Token) queue;
     size_t queue_it;
@@ -14,11 +15,11 @@ void Interpreter_next_token(Interpreter* self);
 
 Type* Interpreter_parse_type(Interpreter* self);
 
-void Interpreter_global_declaration(Interpreter* self);
+Boolean Interpreter_global_declaration(Interpreter* self);
 
-int Interpreter_type_declaration(Interpreter* self);
+Boolean Interpreter_type_declaration(Interpreter* self);
 
-int Interpreter_variable_declaration(Interpreter* self);
+Boolean Interpreter_variable_declaration(Interpreter* self);
 
 Expression* Interpreter_parse_expression0(Interpreter* self);
 Expression* Interpreter_parse_expression0_tail(Interpreter* self,
@@ -80,8 +81,6 @@ void Interpreter_next_token(Interpreter* self)
     {
         self->token = Lexer_next(self->lexer);
     }
-
-    // printf("%d\n", self->token.tag);
 }
 
 void Interpreter_push_token(Interpreter* self, Token token)
@@ -94,16 +93,9 @@ void Interpreter_loop()
     printf("Omega Interpreter for Windows x86-64\n");
 
     Interpreter interpreter;
-
-    Scope global = Scope_Create(NULL);
-    interpreter.global = &global;
-    interpreter.actual = &global;
-    interpreter.stack = STACK_CREATE(u8);
-    interpreter.types = MAP_CREATE(Type*);
+    interpreter.machine = Machine_create();
     interpreter.queue = STACK_CREATE(Token);
     interpreter.queue_it = 0;
-
-    
 
     for (int step = 1; step;)
     {
@@ -122,9 +114,9 @@ void Interpreter_loop()
     }
 }
 
-void Interpreter_global_declaration(Interpreter* self)
+Boolean Interpreter_global_declaration(Interpreter* self)
 {
-    for (;;)
+    for (Boolean step = True; step;)
     {
         Interpreter_next_token(self);
 
@@ -132,68 +124,46 @@ void Interpreter_global_declaration(Interpreter* self)
         {
             case Tag_END:
             {
-                return;
+                step = False;
+                break;
             }
             case Tag_TYPE:
             {
-                if (!Interpreter_type_declaration(self))
-                {
-                    puts("SyntaxError");
-                    return;
-                }
-
-                break;
+                return False;
             }
             case Tag_VAR:
             {
-                if (!Interpreter_variable_declaration(self))
-                {
-                    puts("SyntaxError");
-                    return;
-                }
-
-                break;
+                return Interpreter_variable_declaration(self);
             }
             default:
             {
                 Interpreter_push_token(self, self->token);
-                Expression* exp = Interpreter_parse_expression0(self);
+                Expression* expression = Interpreter_parse_expression0(self);
 
-                if (exp && Interpreter_evaluate(self, exp))
+                if (expression && Machine_evaluate(&self->machine, expression))
                 {
-                    Type* type;
-                    void* value;
-
-                    Interpreter_stack_get(self, &type, &value);
-
-                    if (type && value)
-                    {
-                        Type_print(type);
-                        printf(" (%" PRIu64 ") => ", Type_size(type));
-                        Type_print_value(type, value);
-                        puts("");
-
-                        Interpreter_stack_destroy_n(self, 1);
-                    }
+                    Machine_print_top(&self->machine);
                 }
                 else
                 {
-                    puts("Invalid Expression");
+                    return False;
                 }
 
-                return;
+                break;
             }
         }
     }
+
+    return True;
 }
 
-int Interpreter_type_declaration(Interpreter* self)
+Boolean Interpreter_type_declaration(Interpreter* self)
 {
     Interpreter_next_token(self);
 
     if (self->token.tag != Tag_ID)
     {
-        return 0;
+        return False;
     }
 
     String id = self->token.lexeme;
@@ -203,25 +173,25 @@ int Interpreter_type_declaration(Interpreter* self)
     if (self->token.tag == ';')
     {
         Type* n = NULL;
-        MAP_SET(Type*, self->types, id, n);
-        return 1;
+        MAP_SET(Type*, self->machine.types, id, n);
+        return True;
     }
 
     if (self->token.tag != '{')
     {
-        return 0;
+        return False;
     }
 
     Type_Struct* type = Type_Struct_create();
 
-    for (int step = 1; step;)
+    for (Boolean step = True; step;)
     {
         Interpreter_next_token(self);
 
         if (self->token.tag != Tag_ID)
         {
             Type_destroy((Type*)type);
-            return 0;
+            return False;
         }
 
         String field_id = self->token.lexeme;
@@ -231,7 +201,7 @@ int Interpreter_type_declaration(Interpreter* self)
         if (self->token.tag != ':')
         {
             Type_destroy((Type*)type);
-            return 0;
+            return False;
         }
 
         Type* field_type = Interpreter_parse_type(self);
@@ -239,7 +209,7 @@ int Interpreter_type_declaration(Interpreter* self)
         if (!type)
         {
             Type_destroy((Type*)type);
-            return 0;
+            return False;
         }
 
         STACK_PUSH(Type*, type->fields, field_type);
@@ -261,7 +231,7 @@ int Interpreter_type_declaration(Interpreter* self)
             default:
             {
                 Type_destroy((Type*)type);
-                return 0;
+                return False;
             }
         }
     }
@@ -271,15 +241,15 @@ int Interpreter_type_declaration(Interpreter* self)
     if (self->token.tag != ';')
     {
         Type_destroy((Type*)type);
-        return 0;
+        return False;
     }
 
-    MAP_SET(Type*, self->types, id, type);
+    MAP_SET(Type*, self->machine.types, id, type);
 
     Type_print((Type*)type);
     puts("");
 
-    return 1;
+    return True;
 }
 
 Type* Interpreter_parse_type(Interpreter* self)
@@ -290,16 +260,17 @@ Type* Interpreter_parse_type(Interpreter* self)
     {
         case Tag_ID:
         {
-            Type** type = MAP_GET(Type*, self->types, self->token.lexeme);
+            Type** type =
+                MAP_GET(Type*, self->machine.types, self->token.lexeme);
 
             if (!type)
             {
-                printf("Type Error: Type %s is undefined\n",
-                       String_begin(self->token.lexeme));
+                Print("Type Error: Type %s is undefined\n",
+                      String_begin(self->token.lexeme));
                 return NULL;
             }
 
-            return (Type*)Type_Alias_create(self->token.lexeme, (Type*)*type);
+            return Type_Copy(*type);
         }
         case '*':
         {
@@ -494,7 +465,7 @@ Type* Interpreter_parse_type(Interpreter* self)
     }
 }
 
-int Interpreter_variable_declaration(Interpreter* self)
+Boolean Interpreter_variable_declaration(Interpreter* self)
 {
     Interpreter_next_token(self);
 
@@ -504,16 +475,16 @@ int Interpreter_variable_declaration(Interpreter* self)
             "Syntax Error: After 'var' and identifier is expected insted "
             "of %s.",
             String_begin(self->token.lexeme));
-        return 0;
+        return False;
     }
 
     String id = self->token.lexeme;
 
-    if (MAP_GET(size_t, self->global->table, id))
+    if (MAP_GET(size_t, self->machine.global->table, id))
     {
         printf("Redefinition Error: Symbol %s is already defined.\n",
                String_begin(id));
-        return 0;
+        return False;
     }
 
     Interpreter_next_token(self);
@@ -523,7 +494,7 @@ int Interpreter_variable_declaration(Interpreter* self)
         puts(
             "Syntax Error: In variable declaration, exptected ':' after "
             "identifier");
-        return 0;
+        return False;
     }
 
     Type* type = Interpreter_parse_type(self);
@@ -531,7 +502,7 @@ int Interpreter_variable_declaration(Interpreter* self)
     if (!type)
     {
         puts("Syntax Error: Expected a valid type for variable");
-        return 0;
+        return False;
     }
 
     Interpreter_next_token(self);
@@ -541,20 +512,20 @@ int Interpreter_variable_declaration(Interpreter* self)
         puts(
             "Syntax Error: In variable declaration, exptected ':' after "
             "identifier");
-        return 0;
+        return False;
     }
 
-    size_t index = self->global->values.size;
+    size_t index = self->machine.global->values.size;
 
     size_t amount = sizeof(Type*) + Type_size(type);
-    STACK_GROW(u8, self->global->values, amount);
+    STACK_GROW(u8, self->machine.global->values, amount);
 
-    Type** ptr = (Type**)(self->global->values.buffer + index);
+    Type** ptr = (Type**)(self->machine.global->values.buffer + index);
     *ptr = type;
 
-    MAP_SET(size_t, self->global->table, id, index);
+    MAP_SET(size_t, self->machine.global->table, id, index);
 
-    return 1;
+    return True;
 }
 
 Expression* Interpreter_parse_expression0(Interpreter* self)
@@ -1084,5 +1055,3 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
         }
     }
 }
-
-*/

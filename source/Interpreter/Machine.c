@@ -105,6 +105,18 @@ void Machine_destroy(Machine* self)
     MAP_DESTROY(Type*, self->types);
 }
 
+void Machine_scope_push(Machine* self)
+{
+    self->actual = Scope_Create(self->actual->parent);
+}
+
+void Machine_scope_pop(Machine* self)
+{
+    Scope* scope = self->actual;
+    self->actual = self->actual->parent;
+    Scope_destroy(scope);
+}
+
 void Machine_scope_get(Machine* self, String id, Type** type, void** value)
 {
     Scope* scope = self->actual;
@@ -215,6 +227,24 @@ void Machine_stack_push(Machine* self, Type* type, void* value)
            sizeof(Type*));
 }
 
+void Machine_print_top(Machine* self)
+{
+    Type* type;
+    void* value;
+
+    Machine_stack_get(self, &type, &value);
+
+    if (type && value)
+    {
+        Type_print(type);
+        printf(" (%" PRIu64 ") => ", Type_size(type));
+        Type_print_value(type, value);
+        puts("");
+
+        Machine_stack_destroy_n(self, 1);
+    }
+}
+
 Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
 {
     if (!Machine_evaluate(self, cast->expression))
@@ -231,9 +261,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer* type_to_cast = (Type_Integer*)cast->type;
+            Type_Integer* type_destination =
+                (Type_Integer*)Type_Copy(cast->type);
 
-            switch (type_to_cast->size)
+            switch (type_destination->size)
             {
                 case 1:
                 {
@@ -241,51 +272,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    u8 res = (type_int->is_signed)
-                                                 ? (s8)(*(s8*)(value))
-                                                 : (u8)(*(u8*)(value));
+                                    u8 result = (type_integer->is_signed)
+                                                    ? (s8)(*(s8*)(value))
+                                                    : (u8)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    u8 res = (type_int->is_signed)
-                                                 ? (s8)(*(s16*)(value))
-                                                 : (u8)(*(u16*)(value));
+                                    u8 result = (type_integer->is_signed)
+                                                    ? (s8)(*(s16*)(value))
+                                                    : (u8)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    u8 res = (type_int->is_signed)
-                                                 ? (s8)(*(s32*)(value))
-                                                 : (u8)(*(u32*)(value));
+                                    u8 result = (type_integer->is_signed)
+                                                    ? (s8)(*(s32*)(value))
+                                                    : (u8)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    u8 res = (type_int->is_signed)
-                                                 ? (s8)(*(s64*)(value))
-                                                 : (u8)(*(u64*)(value));
+                                    u8 result = (type_integer->is_signed)
+                                                    ? (s8)(*(s64*)(value))
+                                                    : (u8)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -295,28 +330,30 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
                                     s64 to_int = (s64)(*(fp32*)(value));
 
-                                    u8 res = (type_to_cast->is_signed)
-                                                 ? ((to_int > 127)
-                                                        ? 127
-                                                        : ((to_int < -128)
-                                                               ? 128
-                                                               : (u8)to_int))
-                                                 : ((to_int > 255)
-                                                        ? 255
-                                                        : ((to_int < 0)
-                                                               ? 0
-                                                               : (u8)to_int));
+                                    u8 result =
+                                        (type_destination->is_signed)
+                                            ? ((to_int > 127)
+                                                   ? 127
+                                                   : ((to_int < -128)
+                                                          ? 128
+                                                          : (u8)to_int))
+                                            : ((to_int > 255)
+                                                   ? 255
+                                                   : ((to_int < 0)
+                                                          ? 0
+                                                          : (u8)to_int));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -324,20 +361,22 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                                 {
                                     s64 to_int = (s64)(*(fp64*)(value));
 
-                                    u8 res = (type_to_cast->is_signed)
-                                                 ? ((to_int > 127)
-                                                        ? 127
-                                                        : ((to_int < -128)
-                                                               ? 128
-                                                               : (u8)to_int))
-                                                 : ((to_int > 255)
-                                                        ? 255
-                                                        : ((to_int < 0)
-                                                               ? 0
-                                                               : (u8)to_int));
+                                    u8 result =
+                                        (type_destination->is_signed)
+                                            ? ((to_int > 127)
+                                                   ? 127
+                                                   : ((to_int < -128)
+                                                          ? 128
+                                                          : (u8)to_int))
+                                            : ((to_int > 255)
+                                                   ? 255
+                                                   : ((to_int < 0)
+                                                          ? 0
+                                                          : (u8)to_int));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -348,9 +387,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            u8 res = (u8)(*(u64*)(value));
+                            u8 result = (u8)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -364,51 +404,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    u16 res = (type_int->is_signed)
-                                                  ? (s16)(*(s8*)(value))
-                                                  : (u16)(*(u8*)(value));
+                                    u16 result = (type_integer->is_signed)
+                                                     ? (s16)(*(s8*)(value))
+                                                     : (u16)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    u16 res = (type_int->is_signed)
-                                                  ? (s16)(*(s16*)(value))
-                                                  : (u16)(*(u16*)(value));
+                                    u16 result = (type_integer->is_signed)
+                                                     ? (s16)(*(s16*)(value))
+                                                     : (u16)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    u16 res = (type_int->is_signed)
-                                                  ? (s16)(*(s32*)(value))
-                                                  : (u16)(*(u32*)(value));
+                                    u16 result = (type_integer->is_signed)
+                                                     ? (s16)(*(s32*)(value))
+                                                     : (u16)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    u16 res = (type_int->is_signed)
-                                                  ? (s16)(*(s64*)(value))
-                                                  : (u16)(*(u64*)(value));
+                                    u16 result = (type_integer->is_signed)
+                                                     ? (s16)(*(s64*)(value))
+                                                     : (u16)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -418,28 +462,30 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
                                     s32 to_int = (s32)(*(fp32*)(value));
 
-                                    u16 res = (type_to_cast->is_signed)
-                                                  ? ((to_int > 127)
-                                                         ? 127
-                                                         : ((to_int < -128)
-                                                                ? 128
-                                                                : (u16)to_int))
-                                                  : ((to_int > 255)
-                                                         ? 255
-                                                         : ((to_int < 0)
-                                                                ? 0
-                                                                : (u16)to_int));
+                                    u16 result =
+                                        (type_destination->is_signed)
+                                            ? ((to_int > 127)
+                                                   ? 127
+                                                   : ((to_int < -128)
+                                                          ? 128
+                                                          : (u16)to_int))
+                                            : ((to_int > 255)
+                                                   ? 255
+                                                   : ((to_int < 0)
+                                                          ? 0
+                                                          : (u16)to_int));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -447,8 +493,8 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                                 {
                                     s64 to_int = (s64)(*(fp64*)(value));
 
-                                    u16 res =
-                                        (type_to_cast->is_signed)
+                                    u16 result =
+                                        (type_destination->is_signed)
                                             ? (to_int > 32767
                                                    ? 32767
                                                    : to_int < -32768
@@ -460,7 +506,8 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                                                                 : (u16)to_int);
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -471,9 +518,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            u16 res = (u16)(*(u64*)(value));
+                            u16 result = (u16)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -487,51 +535,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    u32 res = (type_int->is_signed)
-                                                  ? (s32)(*(s8*)(value))
-                                                  : (u32)(*(u8*)(value));
+                                    u32 result = (type_integer->is_signed)
+                                                     ? (s32)(*(s8*)(value))
+                                                     : (u32)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    u32 res = (type_int->is_signed)
-                                                  ? (s32)(*(s16*)(value))
-                                                  : (u32)(*(u16*)(value));
+                                    u32 result = (type_integer->is_signed)
+                                                     ? (s32)(*(s16*)(value))
+                                                     : (u32)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    u32 res = (type_int->is_signed)
-                                                  ? (s32)(*(s32*)(value))
-                                                  : (u32)(*(u32*)(value));
+                                    u32 result = (type_integer->is_signed)
+                                                     ? (s32)(*(s32*)(value))
+                                                     : (u32)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    u32 res = (type_int->is_signed)
-                                                  ? (s32)(*(s64*)(value))
-                                                  : (u32)(*(u64*)(value));
+                                    u32 result = (type_integer->is_signed)
+                                                     ? (s32)(*(s64*)(value))
+                                                     : (u32)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -541,16 +593,17 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
-                                    s32 res = (s32)(*(fp32*)(value));
+                                    s32 result = (s32)(*(fp32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -558,8 +611,8 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                                 {
                                     s64 to_int = (s64)(*(fp64*)(value));
 
-                                    u32 res =
-                                        (type_to_cast->is_signed)
+                                    u32 result =
+                                        (type_destination->is_signed)
                                             ? ((to_int > 2147483647)
                                                    ? 2147483647LL
                                                    : ((to_int < -2147483648LL)
@@ -572,7 +625,8 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                                                           : (u32)to_int));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -583,9 +637,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            u32 res = (u32)(*(u64*)(value));
+                            u32 result = (u32)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -599,51 +654,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    u64 res = (type_int->is_signed)
-                                                  ? (s64)(*(s8*)(value))
-                                                  : (u64)(*(u8*)(value));
+                                    u64 result = (type_integer->is_signed)
+                                                     ? (s64)(*(s8*)(value))
+                                                     : (u64)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    u64 res = (type_int->is_signed)
-                                                  ? (s64)(*(s16*)(value))
-                                                  : (u64)(*(u16*)(value));
+                                    u64 result = (type_integer->is_signed)
+                                                     ? (s64)(*(s16*)(value))
+                                                     : (u64)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    u64 res = (type_int->is_signed)
-                                                  ? (s64)(*(s32*)(value))
-                                                  : (u64)(*(u32*)(value));
+                                    u64 result = (type_integer->is_signed)
+                                                     ? (s64)(*(s32*)(value))
+                                                     : (u64)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    u64 res = (type_int->is_signed)
-                                                  ? (s64)(*(s64*)(value))
-                                                  : (u64)(*(u64*)(value));
+                                    u64 result = (type_integer->is_signed)
+                                                     ? (s64)(*(s64*)(value))
+                                                     : (u64)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -653,25 +712,27 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
-                                    s64 res = (s64)(*(fp32*)(value));
+                                    s64 result = (s64)(*(fp32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    s64 res = (s64)(*(fp64*)(value));
+                                    s64 result = (s64)(*(fp64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -682,9 +743,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            u64 res = (u64)(*(u64*)(value));
+                            u64 result = (u64)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -698,9 +760,9 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
         }
         case TYPE_FLOAT:
         {
-            Type_Float* type_to_cast = (Type_Float*)cast->type;
+            Type_Float* type_destination = (Type_Float*)Type_Copy(cast->type);
 
-            switch (type_to_cast->size)
+            switch (type_destination->size)
             {
                 case 4:
                 {
@@ -708,51 +770,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    fp32 res = (type_int->is_signed)
-                                                   ? (fp32)(*(s8*)(value))
-                                                   : (fp32)(*(u8*)(value));
+                                    fp32 result = (type_integer->is_signed)
+                                                      ? (fp32)(*(s8*)(value))
+                                                      : (fp32)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    fp32 res = (type_int->is_signed)
-                                                   ? (fp32)(*(s16*)(value))
-                                                   : (fp32)(*(u16*)(value));
+                                    fp32 result = (type_integer->is_signed)
+                                                      ? (fp32)(*(s16*)(value))
+                                                      : (fp32)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    fp32 res = (type_int->is_signed)
-                                                   ? (fp32)(*(s32*)(value))
-                                                   : (fp32)(*(u32*)(value));
+                                    fp32 result = (type_integer->is_signed)
+                                                      ? (fp32)(*(s32*)(value))
+                                                      : (fp32)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    fp32 res = (type_int->is_signed)
-                                                   ? (fp32)(*(s64*)(value))
-                                                   : (fp32)(*(u64*)(value));
+                                    fp32 result = (type_integer->is_signed)
+                                                      ? (fp32)(*(s64*)(value))
+                                                      : (fp32)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -762,25 +828,27 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
-                                    fp32 res = (fp32)(*(fp32*)(value));
+                                    fp32 result = (fp32)(*(fp32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    fp32 res = (fp32)(*(fp64*)(value));
+                                    fp32 result = (fp32)(*(fp64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -791,9 +859,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            fp32 res = (fp32)(*(u64*)(value));
+                            fp32 result = (fp32)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -807,51 +876,55 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                     {
                         case TYPE_INTEGER:
                         {
-                            Type_Integer* type_int = (Type_Integer*)type;
+                            Type_Integer* type_integer = (Type_Integer*)type;
 
-                            switch (type_int->size)
+                            switch (type_integer->size)
                             {
                                 case 1:
                                 {
-                                    fp64 res = (type_int->is_signed)
-                                                   ? (fp64)(*(s8*)(value))
-                                                   : (fp64)(*(u8*)(value));
+                                    fp64 result = (type_integer->is_signed)
+                                                      ? (fp64)(*(s8*)(value))
+                                                      : (fp64)(*(u8*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 2:
                                 {
-                                    fp64 res = (type_int->is_signed)
-                                                   ? (fp64)(*(s16*)(value))
-                                                   : (fp64)(*(u16*)(value));
+                                    fp64 result = (type_integer->is_signed)
+                                                      ? (fp64)(*(s16*)(value))
+                                                      : (fp64)(*(u16*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 4:
                                 {
-                                    fp64 res = (type_int->is_signed)
-                                                   ? (fp64)(*(s32*)(value))
-                                                   : (fp64)(*(u32*)(value));
+                                    fp64 result = (type_integer->is_signed)
+                                                      ? (fp64)(*(s32*)(value))
+                                                      : (fp64)(*(u32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    fp64 res = (type_int->is_signed)
-                                                   ? (fp64)(*(s64*)(value))
-                                                   : (fp64)(*(u64*)(value));
+                                    fp64 result = (type_integer->is_signed)
+                                                      ? (fp64)(*(s64*)(value))
+                                                      : (fp64)(*(u64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -861,25 +934,27 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         }
                         case TYPE_FLOAT:
                         {
-                            Type_Float* type_fp = (Type_Float*)type;
+                            Type_Float* type_float = (Type_Float*)type;
 
-                            switch (type_fp->size)
+                            switch (type_float->size)
                             {
                                 case 4:
                                 {
-                                    fp64 res = (fp64)(*(fp32*)(value));
+                                    fp64 result = (fp64)(*(fp32*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
                                 case 8:
                                 {
-                                    fp64 res = (fp64)(*(fp64*)(value));
+                                    fp64 result = (fp64)(*(fp64*)(value));
 
                                     Machine_stack_destroy_n(self, 1);
-                                    Machine_stack_push(self, cast->type, &res);
+                                    Machine_stack_push(
+                                        self, (Type*)type_destination, &result);
 
                                     return True;
                                 }
@@ -890,9 +965,10 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                         case TYPE_POINTER:
                         case TYPE_FUNCTION:
                         {
-                            fp64 res = (fp64)(*(u64*)(value));
+                            fp64 result = (fp64)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, (Type*)type_destination,
+                                               &result);
 
                             return True;
                         }
@@ -911,41 +987,41 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
             {
                 case TYPE_INTEGER:
                 {
-                    Type_Integer* type_int = (Type_Integer*)type;
+                    Type_Integer* type_integer = (Type_Integer*)type;
 
-                    switch (type_int->size)
+                    switch (type_integer->size)
                     {
                         case 1:
                         {
-                            void* res = (void*)(u64)((*(u8*)(value)));
+                            void* result = (void*)(u64)((*(u8*)(value)));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, cast->type, &result);
 
                             return True;
                         }
                         case 2:
                         {
-                            void* res = (void*)(u64)((*(u16*)(value)));
+                            void* result = (void*)(u64)((*(u16*)(value)));
 
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, cast->type, &result);
 
                             return True;
                         }
                         case 4:
                         {
-                            void* res = (void*)(u64)((*(u32*)(value)));
+                            void* result = (void*)(u64)((*(u32*)(value)));
 
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, cast->type, &result);
 
                             return True;
                         }
                         case 8:
                         {
-                            void* res = (void*)(*(u64*)(value));
+                            void* result = (void*)(*(u64*)(value));
                             Machine_stack_destroy_n(self, 1);
-                            Machine_stack_push(self, cast->type, &res);
+                            Machine_stack_push(self, cast->type, &result);
 
                             return True;
                         }
@@ -956,9 +1032,9 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
                 case TYPE_POINTER:
                 case TYPE_FUNCTION:
                 {
-                    void* res = (*(void**)(value));
+                    void* result = (*(void**)(value));
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, cast->type, &res);
+                    Machine_stack_push(self, cast->type, &result);
 
                     return True;
                 }
@@ -971,7 +1047,6 @@ Boolean Machine_evaluate_cast(Machine* self, Expression_Cast* cast)
     return False;
 }
 
-/*
 Boolean Machine_evaluate_assign(Machine* self, Expression_Assign* assign)
 {
     if (!Machine_evaluate(self, assign->rhs))
@@ -981,26 +1056,24 @@ Boolean Machine_evaluate_assign(Machine* self, Expression_Assign* assign)
 
     if (assign->lhs->expression_id == EXPRESSION_REFERENCE)
     {
-        Expression_Reference* ref = (Expression_Reference*)assign->lhs;
+        Expression_Reference* reference = (Expression_Reference*)assign->lhs;
 
         Type *type_lhs, *type_rhs;
         void *value_lhs, *value_rhs;
 
-        Machine_scope_get(self, ref->id, &type_lhs, &value_lhs);
+        Machine_scope_get(self, reference->id, &type_lhs, &value_lhs);
         Machine_stack_get(self, &type_rhs, &value_rhs);
 
         if (!Type_equal(type_lhs, type_rhs))
         {
-            puts("Incompatible Types");
             return False;
         }
 
-        Machine_scope_assign(self, ref->id, value_rhs);
+        Machine_scope_assign(self, reference->id, value_rhs);
     }
     else
     {
-        puts("Left Hand Expression is not an LValue");
-        return 0;
+        return False;
     }
 }
 
@@ -1028,256 +1101,256 @@ Boolean Machine_evaluate_binary(Machine* self, Expression_Binary* binary)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer* type_int = (Type_Integer*)type;
+            Type_Integer* type_integer = (Type_Integer*)type;
 
-            switch (type_int->size)
+            switch (type_integer->size)
             {
                 case 1:
                 {
                     u8 lhs = *((u8*)value_lhs);
                     u8 rhs = *((u8*)value_rhs);
-                    u8 res;
+                    u8 result;
 
                     switch (binary->op)
                     {
                         case '|':
-                            res = lhs | rhs;
+                            result = lhs | rhs;
                             break;
                         case '^':
-                            res = lhs ^ rhs;
+                            result = lhs ^ rhs;
                             break;
                         case '&':
-                            res = lhs & rhs;
+                            result = lhs & rhs;
                             break;
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case Tag_LSHIFT:
-                            res = lhs << rhs;
+                            result = lhs << rhs;
                             break;
                         case Tag_RSHIFT:
-                            res = lhs >> rhs;
+                            result = lhs >> rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case '%':
-                            res = lhs % rhs;
+                            result = lhs % rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
                 case 2:
                 {
                     u16 lhs = *((u16*)value_lhs);
                     u16 rhs = *((u16*)value_rhs);
-                    u16 res;
+                    u16 result;
 
                     switch (binary->op)
                     {
                         case '|':
-                            res = lhs | rhs;
+                            result = lhs | rhs;
                             break;
                         case '^':
-                            res = lhs ^ rhs;
+                            result = lhs ^ rhs;
                             break;
                         case '&':
-                            res = lhs & rhs;
+                            result = lhs & rhs;
                             break;
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case Tag_LSHIFT:
-                            res = lhs << rhs;
+                            result = lhs << rhs;
                             break;
                         case Tag_RSHIFT:
-                            res = lhs >> rhs;
+                            result = lhs >> rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case '%':
-                            res = lhs % rhs;
+                            result = lhs % rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
                 case 4:
                 {
                     u32 lhs = *((u32*)value_lhs);
                     u32 rhs = *((u32*)value_rhs);
-                    u32 res;
+                    u32 result;
 
                     switch (binary->op)
                     {
                         case '|':
-                            res = lhs | rhs;
+                            result = lhs | rhs;
                             break;
                         case '^':
-                            res = lhs ^ rhs;
+                            result = lhs ^ rhs;
                             break;
                         case '&':
-                            res = lhs & rhs;
+                            result = lhs & rhs;
                             break;
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case Tag_LSHIFT:
-                            res = lhs << rhs;
+                            result = lhs << rhs;
                             break;
                         case Tag_RSHIFT:
-                            res = lhs >> rhs;
+                            result = lhs >> rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case '%':
-                            res = lhs % rhs;
+                            result = lhs % rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
                 case 8:
                 {
                     u64 lhs = *((u64*)value_lhs);
                     u64 rhs = *((u64*)value_rhs);
-                    u64 res;
+                    u64 result;
 
                     switch (binary->op)
                     {
                         case '|':
-                            res = lhs | rhs;
+                            result = lhs | rhs;
                             break;
                         case '^':
-                            res = lhs ^ rhs;
+                            result = lhs ^ rhs;
                             break;
                         case '&':
-                            res = lhs & rhs;
+                            result = lhs & rhs;
                             break;
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case Tag_LSHIFT:
-                            res = lhs << rhs;
+                            result = lhs << rhs;
                             break;
                         case Tag_RSHIFT:
-                            res = lhs >> rhs;
+                            result = lhs >> rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case '%':
-                            res = lhs % rhs;
+                            result = lhs % rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
             }
@@ -1294,39 +1367,39 @@ Boolean Machine_evaluate_binary(Machine* self, Expression_Binary* binary)
                 {
                     fp32 lhs = *((fp32*)value_lhs);
                     fp32 rhs = *((fp32*)value_rhs);
-                    fp32 res;
+                    fp32 result;
 
                     switch (binary->op)
                     {
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case Tag_LSHIFT:
                         case Tag_RSHIFT:
@@ -1334,51 +1407,50 @@ Boolean Machine_evaluate_binary(Machine* self, Expression_Binary* binary)
                         case '|':
                         case '^':
                         case '&':
-                            puts("Unsuported Operation");
-                            return 0;
+                            return False;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
                 case 8:
                 {
                     fp64 lhs = *((fp64*)value_lhs);
                     fp64 rhs = *((fp64*)value_rhs);
-                    fp64 res;
+                    fp64 result;
 
                     switch (binary->op)
                     {
                         case Tag_EQ:
-                            res = lhs == rhs;
+                            result = lhs == rhs;
                             break;
                         case Tag_NE:
-                            res = lhs != rhs;
+                            result = lhs != rhs;
                             break;
                         case '>':
-                            res = lhs > rhs;
+                            result = lhs > rhs;
                             break;
                         case '<':
-                            res = lhs < rhs;
+                            result = lhs < rhs;
                             break;
                         case Tag_GE:
-                            res = lhs >= rhs;
+                            result = lhs >= rhs;
                             break;
                         case Tag_LE:
-                            res = lhs <= rhs;
+                            result = lhs <= rhs;
                             break;
                         case '+':
-                            res = lhs + rhs;
+                            result = lhs + rhs;
                             break;
                         case '-':
-                            res = lhs - rhs;
+                            result = lhs - rhs;
                             break;
                         case '*':
-                            res = lhs * rhs;
+                            result = lhs * rhs;
                             break;
                         case '/':
-                            res = lhs / rhs;
+                            result = lhs / rhs;
                             break;
                         case Tag_LSHIFT:
                         case Tag_RSHIFT:
@@ -1386,24 +1458,24 @@ Boolean Machine_evaluate_binary(Machine* self, Expression_Binary* binary)
                         case '|':
                         case '^':
                         case '&':
-                            puts("Unsuported Operation");
-                            return 0;
+                            return False;
                     }
 
                     Machine_stack_destroy_n(self, 2);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
                     break;
                 }
                 default:
                 {
-                    puts("Unsuported Operation");
-                    return 0;
+                    return False;
                 }
             }
 
             break;
         }
     }
+
+    return True;
 }
 
 Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
@@ -1411,16 +1483,18 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
     if (unary->op == '&' &&
         unary->expression->expression_id == EXPRESSION_REFERENCE)
     {
-        Expression_Reference* ref = (Expression_Reference*)unary->expression;
+        Expression_Reference* reference =
+            (Expression_Reference*)unary->expression;
 
         Type* type;
         void* value;
 
-        Machine_scope_get(self, ref->id, &type, &value);
+        Machine_scope_get(self, reference->id, &type, &value);
 
-        Type_Pointer* pointer = Type_Pointer_create(type);
+        Type_Pointer* pointer = Type_Pointer_create(Type_Copy(type));
 
         Machine_stack_push(self, (Type*)pointer, value);
+
         return True;
     }
 
@@ -1443,7 +1517,8 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
             memcpy(value_dereferenced, value, size);
 
             Machine_stack_destroy_n(self, 1);
-            Machine_stack_push(self, type_pointer->type, value_dereferenced);
+            Machine_stack_push(self, Type_Copy(type_pointer->type),
+                               value_dereferenced);
 
             free(value_dereferenced);
 
@@ -1453,102 +1528,104 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
         return False;
     }
 
-    type = Type_dereference(type);
-
     switch (type->type_id)
     {
         case TYPE_INTEGER:
         {
-            Type_Integer* type_int = (Type_Integer*)type;
+            Type_Integer* type_integer = (Type_Integer*)type;
 
-            switch (type_int->size)
+            switch (type_integer->size)
             {
                 case 1:
                 {
                     u8 rhs = *((u8*)value);
-                    u8 res;
+                    u8 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = (u8)(-(s8)(rhs));
+                            result = (u8)(-(s8)(rhs));
                             break;
                         case '~':
-                            res = ~rhs;
+                            result = ~rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, Type_Copy(type), &result);
+
                     break;
                 }
                 case 2:
                 {
                     u16 rhs = *((u16*)value);
-                    u16 res;
+                    u16 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = (u16)(-(s16)(rhs));
+                            result = (u16)(-(s16)(rhs));
                             break;
                         case '~':
-                            res = ~rhs;
+                            result = ~rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, Type_Copy(type), &result);
+
                     break;
                 }
                 case 4:
                 {
                     u32 rhs = *((u32*)value);
-                    u32 res;
+                    u32 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = (u32)(-(s32)(rhs));
+                            result = (u32)(-(s32)(rhs));
                             break;
                         case '~':
-                            res = ~rhs;
+                            result = ~rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, Type_Copy(type), &result);
+
                     break;
                 }
                 case 8:
                 {
                     u64 rhs = *((u64*)value);
-                    u64 res;
+                    u64 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = (u64)(-(s64)(rhs));
+                            result = (u64)(-(s64)(rhs));
                             break;
                         case '~':
-                            res = ~rhs;
+                            result = ~rhs;
                             break;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, Type_Copy(type), &result);
+
                     break;
                 }
             }
@@ -1557,52 +1634,52 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
         }
         case TYPE_FLOAT:
         {
-            Type_Float* type_fp = (Type_Float*)type;
+            Type_Float* type_float = (Type_Float*)type;
 
-            switch (type_fp->size)
+            switch (type_float->size)
             {
                 case 4:
                 {
                     fp32 rhs = *((fp32*)value);
-                    fp32 res;
+                    fp32 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = -rhs;
+                            result = -rhs;
                             break;
                         default:
-                            puts("Unsupported operation");
-                            return 0;
+                            return False;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
+
                     break;
                 }
                 case 8:
                 {
                     fp64 rhs = *((fp64*)value);
-                    fp64 res;
+                    fp64 result;
 
                     switch (unary->op)
                     {
                         case '!':
-                            res = !rhs;
+                            result = !rhs;
                             break;
                         case '-':
-                            res = -rhs;
+                            result = -rhs;
                             break;
                         default:
-                            puts("Unsupported operation");
-                            return 0;
+                            return False;
                     }
 
                     Machine_stack_destroy_n(self, 1);
-                    Machine_stack_push(self, type, &res);
+                    Machine_stack_push(self, type, &result);
+
                     break;
                 }
             }
@@ -1611,10 +1688,11 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
         }
         default:
         {
-            puts("Unsuported Operation");
-            return 0;
+            return False;
         }
     }
+
+    return True;
 }
 
 Boolean Machine_evaluate(Machine* self, Expression* expression)
@@ -1645,7 +1723,7 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
                 (Expression_Integer_Literal*)expression;
 
             u64 value = strtoull(String_begin(lit->value), NULL, 10);
-            Type* type = *MAP_GET(Type*, self->types, id_s64);
+            Type* type = Type_Integer_create(8, True);
 
             Machine_stack_push(self, type, &value);
 
@@ -1656,7 +1734,7 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
             Expression_Real_Literal* lit = (Expression_Real_Literal*)expression;
 
             fp64 value = strtod(String_begin(lit->value), NULL);
-            Type* type = *MAP_GET(Type*, self->types, id_fp64);
+            Type* type = Type_Float_create(8);
 
             Machine_stack_push(self, type, &value);
 
@@ -1664,12 +1742,12 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
         }
         case EXPRESSION_REFERENCE:
         {
-            Expression_Reference* ref = (Expression_Reference*)expression;
+            Expression_Reference* reference = (Expression_Reference*)expression;
 
             Type* type;
             void* value;
 
-            Machine_scope_get(self, ref->id, &type, &value);
+            Machine_scope_get(self, reference->id, &type, &value);
             Machine_stack_push(self, type, value);
 
             return True;
@@ -1680,4 +1758,3 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
         }
     }
 }
-*/
