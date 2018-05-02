@@ -1,3 +1,4 @@
+/*
 #include <Interpreter/Interpreter.h>
 #include <Interpreter/Machine.h>
 
@@ -103,6 +104,8 @@ void Interpreter_loop()
 
         char* line = Read();
 
+        double start = Clock_get();
+
         Lexer lexer = Lexer_create(line, String_new(NULL, 0));
         interpreter.lexer = &lexer;
         Interpreter_global_declaration(&interpreter);
@@ -111,6 +114,10 @@ void Interpreter_loop()
         interpreter.queue_it = 0;
         free(line);
         Lexer_destroy(&lexer);
+
+        double end = Clock_get();
+
+        Print("Time spent: %lf\n", end - start);
     }
 }
 
@@ -140,14 +147,20 @@ Boolean Interpreter_global_declaration(Interpreter* self)
                 Interpreter_push_token(self, self->token);
                 Expression* expression = Interpreter_parse_expression0(self);
 
+                double start = Clock_get();
                 if (expression && Machine_evaluate(&self->machine, expression))
                 {
-                    Machine_print_top(&self->machine);
+                    // Machine_print_top(&self->machine);
+
+                    double end = Clock_get();
+                    Print("Time spent: %lf\n", end - start);
                 }
                 else
                 {
                     return False;
                 }
+
+                Expression_destroy(expression);
 
                 break;
             }
@@ -1029,6 +1042,12 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
             cast->expression = expression;
             return (Expression*)cast;
         }
+        case Tag_LITERAL_STRING:
+        {
+            Expression_String_Literal* lit = Expression_String_Literal_create();
+            lit->value = self->token.lexeme;
+            return (Expression*)lit;
+        }
         case Tag_LITERAL_INTEGER:
         {
             Expression_Integer_Literal* lit =
@@ -1055,3 +1074,4 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
         }
     }
 }
+*/

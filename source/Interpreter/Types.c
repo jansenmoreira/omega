@@ -682,7 +682,7 @@ void Type_print_value(Type* type, void* value)
         case TYPE_POINTER:
         case TYPE_FUNCTION:
         {
-            Print("%016" PRIX64, (u64)value);
+            Print("%016" PRIX64, *(u64 **)(value));
             break;
         }
         case TYPE_TUPLE:

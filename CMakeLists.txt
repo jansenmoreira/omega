@@ -30,6 +30,11 @@ add_executable(
     source/Interpreter/Machine.h
     source/Interpreter/Interpreter.c
     source/Interpreter/Interpreter.h
+    
+    source/Machine/Execution.c
+    source/Machine/Execution.h
+    source/Machine/Machine.c
+    source/Machine/Machine.h
 
     source/Utility/Standard.h
     source/Utility/Console.c
@@ -38,6 +43,8 @@ add_executable(
     source/Utility/Dynamic.h
     source/Utility/Panic.c
     source/Utility/Panic.h
+    source/Utility/Performance.c
+    source/Utility/Performance.h
     source/Utility/UCD.c
     source/Utility/Unicode.c
     source/Utility/Unicode.h

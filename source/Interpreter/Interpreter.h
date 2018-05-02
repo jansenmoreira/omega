@@ -1,3 +1,4 @@
+/*
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
@@ -8,7 +9,9 @@
 #include <Structures/Map.h>
 #include <Structures/Stack.h>
 #include <Utility/Console.h>
+#include <Utility/Performance.h>
 
 void Interpreter_loop();
 
 #endif
+*/

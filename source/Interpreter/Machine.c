@@ -1,3 +1,4 @@
+/*
 #include <Interpreter/Machine.h>
 
 Scope* Scope_Create(Scope* parent)
@@ -1493,7 +1494,7 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
 
         Type_Pointer* pointer = Type_Pointer_create(Type_Copy(type));
 
-        Machine_stack_push(self, (Type*)pointer, value);
+        Machine_stack_push(self, (Type*)pointer, &value);
 
         return True;
     }
@@ -1514,11 +1515,12 @@ Boolean Machine_evaluate_unary(Machine* self, Expression_Unary* unary)
 
             void* value_dereferenced = malloc(size);
 
-            memcpy(value_dereferenced, value, size);
+            memcpy(value_dereferenced, *(void **)(value), size);
+
+            Type* type_dereferenced = Type_Copy(type_pointer->type);
 
             Machine_stack_destroy_n(self, 1);
-            Machine_stack_push(self, Type_Copy(type_pointer->type),
-                               value_dereferenced);
+            Machine_stack_push(self, type_dereferenced, value_dereferenced);
 
             free(value_dereferenced);
 
@@ -1717,6 +1719,19 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
         {
             return Machine_evaluate_unary(self, (Expression_Unary*)expression);
         }
+        case EXPRESSION_STRING_LITERAL:
+        {
+            Expression_String_Literal* lit =
+                (Expression_String_Literal*)expression;
+
+            u8* value = String_begin(lit->value);
+            Type* type = Type_Integer_create(1, False);
+            Type* type_ptr = Type_Pointer_create(type);
+
+            Machine_stack_push(self, type_ptr, &value);
+
+            return True;
+        }
         case EXPRESSION_INTEGER_LITERAL:
         {
             Expression_Integer_Literal* lit =
@@ -1748,7 +1763,7 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
             void* value;
 
             Machine_scope_get(self, reference->id, &type, &value);
-            Machine_stack_push(self, type, value);
+            Machine_stack_push(self, Type_Copy(type), value);
 
             return True;
         }
@@ -1758,3 +1773,4 @@ Boolean Machine_evaluate(Machine* self, Expression* expression)
         }
     }
 }
+*/

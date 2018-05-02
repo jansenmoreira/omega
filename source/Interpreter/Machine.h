@@ -1,3 +1,4 @@
+/*
 #ifndef MACHINE_H
 #define MACHINE_H
 
@@ -31,3 +32,4 @@ void Machine_scope_add(Machine* self, String id, Type* type, void* value);
 Boolean Machine_evaluate(Machine* self, Expression* expression);
 
 #endif
+* /
