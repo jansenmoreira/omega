@@ -2,10 +2,17 @@
 #define EXECUTION_H
 
 #include <Machine/Machine.h>
+#include <Machine/Native_Call.h>
 
 typedef enum Instructions
 {
     INS_HALT,
+
+    INS_ALLOC_8,
+    INS_ALLOC_16,
+    INS_ALLOC_32,
+    INS_ALLOC_64,
+    INS_ALLOC_N,
 
     INS_PUSH_8,
     INS_PUSH_16,
@@ -204,6 +211,8 @@ typedef enum Instructions
     INS_JGT,
     INS_JGE,
     INS_JMP,
+
+    INS_NATIVE_CALL,
 } Instructions;
 
 typedef union Program {
@@ -215,9 +224,9 @@ typedef union Program {
     u8 imm_i8[8];
     fp64 imm_fp64;
     fp32 imm_fp32[2];
-
+    void* ptr;
 } Program;
 
-void execute(Program* program, Machine* machine);
+void __cdecl execute(Program* program, Machine* machine);
 
 #endif

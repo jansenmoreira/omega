@@ -13,6 +13,115 @@ void execute(Program* program, Machine* machine)
                 step = False;
                 break;
             }
+
+            case INS_ALLOC_8:
+            {
+                if (machine->size + 1 > machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + 1) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                machine->size += 1;
+                counter += 1;
+                break;
+            }
+            case INS_ALLOC_16:
+            {
+                if (machine->size + 2 > machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + 2) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                machine->size += 2;
+                counter += 1;
+                break;
+            }
+            case INS_ALLOC_32:
+            {
+                if (machine->size + 4 > machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + 4) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                machine->size += 4;
+                counter += 1;
+                break;
+            }
+            case INS_ALLOC_64:
+            {
+                if (machine->size + 8 > machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + 8) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                machine->size += 8;
+                counter += 1;
+                break;
+            }
+            case INS_ALLOC_N:
+            {
+                u64 size = (program + counter + 1)->imm_i64;
+
+                if (machine->size + size > machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + size) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                machine->size += size;
+                counter += 2;
+                break;
+            }
+
             case INS_PUSH_8:
             {
                 if (machine->size + 1 > machine->capacity)
@@ -1596,6 +1705,67 @@ void execute(Program* program, Machine* machine)
             case INS_JMP:
             {
                 counter = (program + counter + 1)->imm_i64;
+                break;
+            }
+            case INS_NATIVE_CALL:
+            {
+                u64 number_of_parameters = (program + counter + 3)->imm_i64;
+
+                if (machine->size + ((number_of_parameters + 1) * 2) >
+                    machine->capacity)
+                {
+                    u8* buffer =
+                        (u8*)malloc(sizeof(u8) * ((machine->size + 1) << 1));
+
+                    if (!buffer)
+                    {
+                        Panic(Memory_Error);
+                    }
+
+                    memcpy(buffer, machine->buffer, machine->size);
+
+                    machine->buffer = buffer;
+                }
+
+                void* function_pointer =
+                    (void*)((program + counter + 1)->imm_i64);
+
+                u32 return_type = (program + counter + 2)->imm_i32[0];
+                u32 return_size = (program + counter + 2)->imm_i32[1];
+
+                u8* ptr = machine->buffer + machine->size;
+
+                size_t adjust = 0;
+
+                for (size_t it = number_of_parameters; it > 0; it--)
+                {
+                    u32 param_type = (program + counter + it + 3)->imm_i32[0];
+                    u32 param_size = (program + counter + it + 3)->imm_i32[1];
+
+                    ptr -= param_size;
+                    adjust += param_size;
+
+                    Native_Call_Value* param =
+                        (Native_Call_Value*)(machine->buffer + machine->size +
+                                             (it * sizeof(Native_Call_Value)));
+                    param->type = param_type;
+                    param->size = param_size;
+                    param->value = ptr;
+                }
+
+                ptr -= return_size;
+
+                Native_Call_Value* ret =
+                    (Native_Call_Value*)(machine->buffer + machine->size);
+                ret->type = return_type;
+                ret->size = return_size;
+                ret->value = ptr;
+
+                Native_Call(function_pointer, *ret, number_of_parameters,
+                            ret + 1);
+
+                machine->size -= adjust;
+                counter += 4 + number_of_parameters;
                 break;
             }
             default:

@@ -15,6 +15,8 @@ add_custom_command(
     COMMENT Generating Utility/UCD.c
 )
 
+enable_language(ASM_MASM)
+
 add_executable(
     omega-cli
 
@@ -34,7 +36,8 @@ add_executable(
     source/Machine/Execution.c
     source/Machine/Execution.h
     source/Machine/Machine.c
-    source/Machine/Machine.h
+    source/Machine/Native_Call.h
+    source/Machine/Native_Call.asm
 
     source/Utility/Standard.h
     source/Utility/Console.c
