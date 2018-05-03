@@ -1,18 +1,18 @@
 #include <Utility/File.h>
 
-Boolean File_open(File *self, String path)
+Boolean File_open(File* self, String path)
 {
-    self->lines = STACK_CREATE(u64);
+    self->lines = Stack_create(sizeof(U64));
 
-    FILE *stream;
+    FILE* stream;
 
     if (fopen_s(&stream, String_begin(path), "rb"))
     {
         return False;
     }
 
-    u64 value = 0;
-    STACK_PUSH(u64, self->lines, value);
+    U64 value = 0;
+    Stack_push(&self->lines, &value);
 
     int c = fgetc(stream);
     int at = 0;
@@ -22,39 +22,44 @@ Boolean File_open(File *self, String path)
         if (c == '\n')
         {
             value = at + 1;
-            STACK_PUSH(u64, self->lines, value);
+            Stack_push(&self->lines, &value);
         }
     }
 
-    if (ferror(stream)) Panic(Memory_Error);
+    if (ferror(stream))
+        Panic(Memory_Error);
 
-    self->text = (char *)malloc(sizeof(char) * (at + 1));
+    self->text = (char*)malloc(sizeof(char) * (at + 1));
 
-    if (!self->text) Panic(Input_Output_Error);
+    if (!self->text)
+        Panic(Input_Output_Error);
 
     self->text[at] = 0;
     self->path = path;
 
-    if (fseek(stream, 0, SEEK_SET)) Panic(Input_Output_Error);
+    if (fseek(stream, 0, SEEK_SET))
+        Panic(Input_Output_Error);
 
     size_t read = fread(self->text, at, 1, stream);
 
-    if (read != at && ferror(stream)) Panic(Input_Output_Error);
+    if (read != at && ferror(stream))
+        Panic(Input_Output_Error);
 
-    if (fclose(stream) == EOF) Panic(Input_Output_Error);
+    if (fclose(stream) == EOF)
+        Panic(Input_Output_Error);
 
     return True;
 }
 
-void File_destroy(File *self)
+void File_destroy(File* self)
 {
-    STACK_DESTROY(u64, self->lines);
+    Stack_destroy(&self->lines);
     free(self->text);
 }
 
 int File_utf_width = 32;
 
-Position File_position(File *self, u64 at, int is_begin)
+Position File_position(File* self, U64 at, int is_begin)
 {
     Position position;
 
@@ -65,7 +70,7 @@ Position File_position(File *self, u64 at, int is_begin)
         step = count / 2;
         it = first + step;
 
-        if (STACK_GET(u64, self->lines, it) < at)
+        if (*(U64*)(Stack_get(&self->lines, it)) < at)
         {
             first = it + 1;
             count -= step + 1;
@@ -85,7 +90,7 @@ Position File_position(File *self, u64 at, int is_begin)
 
     position.column = 0;
 
-    for (u64 i = self->lines.buffer[position.line - 1];
+    for (U64 i = self->lines.buffer[position.line - 1];
          i < at || (!is_begin && i <= at);)
     {
         switch (File_utf_width)
@@ -115,7 +120,7 @@ Position File_position(File *self, u64 at, int is_begin)
                         width += 1;
                 }
 
-                u32 code_page;
+                U32 code_page;
 
                 switch (self->text[i] & 0xF0)
                 {
@@ -176,7 +181,8 @@ Position File_position(File *self, u64 at, int is_begin)
         }
     }
 
-    if (is_begin) position.column += 1;
+    if (is_begin)
+        position.column += 1;
 
     return position;
 }

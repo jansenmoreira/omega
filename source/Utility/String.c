@@ -4,22 +4,22 @@
 
 typedef struct String_Manager
 {
-    char *buffer;
+    char* buffer;
     size_t buffer_size;
     size_t buffer_capacity;
 
-    String *set;
+    String* set;
     size_t set_size;
     size_t set_capacity;
 
-    u32 seed;
+    U32 seed;
 } String_Manager;
 
 static String_Manager manager;
 
-static u64 FMIX64(const u64 x)
+static U64 FMIX64(const U64 x)
 {
-    u64 k = x;
+    U64 k = x;
     k ^= k >> 33;
     k *= 0xff51afd7ed558ccdULL;
     k ^= k >> 33;
@@ -28,24 +28,24 @@ static u64 FMIX64(const u64 x)
     return k;
 }
 
-static void hash(const void *key, const u64 length, const u32 seed, u64 *high,
-                 u64 *low)
+static void hash(const void* key, const U64 length, const U32 seed, U64* high,
+                 U64* low)
 {
-    const u8 *data = (const u8 *)key;
-    const u64 blocksCount = length / 16;
+    const U8* data = (const U8*)key;
+    const U64 blocksCount = length / 16;
 
-    u64 h1 = seed;
-    u64 h2 = seed;
+    U64 h1 = seed;
+    U64 h2 = seed;
 
-    u64 k1;
-    u64 k2;
+    U64 k1;
+    U64 k2;
 
-    const u64 c1 = 0x87c37b91114253d5ULL;
-    const u64 c2 = 0x4cf5ad432745937fULL;
+    const U64 c1 = 0x87c37b91114253d5ULL;
+    const U64 c2 = 0x4cf5ad432745937fULL;
 
-    const u64 *blocks = (const u64 *)data;
+    const U64* blocks = (const U64*)data;
 
-    for (u64 i = 0; i < blocksCount; i += 2)
+    for (U64 i = 0; i < blocksCount; i += 2)
     {
         k1 = blocks[i];
         k2 = blocks[i + 1];
@@ -67,7 +67,7 @@ static void hash(const void *key, const u64 length, const u32 seed, u64 *high,
         h2 = h2 * 5 + 0x38495ab5;
     }
 
-    const u8 *tail = (const u8 *)(data + blocksCount * 16);
+    const U8* tail = (const U8*)(data + blocksCount * 16);
 
     k1 = 0;
     k2 = 0;
@@ -75,39 +75,39 @@ static void hash(const void *key, const u64 length, const u32 seed, u64 *high,
     switch (length & 15)
     {
         case 15:
-            k2 ^= ((u64)tail[14]) << 48;
+            k2 ^= ((U64)tail[14]) << 48;
         case 14:
-            k2 ^= ((u64)tail[13]) << 40;
+            k2 ^= ((U64)tail[13]) << 40;
         case 13:
-            k2 ^= ((u64)tail[12]) << 32;
+            k2 ^= ((U64)tail[12]) << 32;
         case 12:
-            k2 ^= ((u64)tail[11]) << 24;
+            k2 ^= ((U64)tail[11]) << 24;
         case 11:
-            k2 ^= ((u64)tail[10]) << 16;
+            k2 ^= ((U64)tail[10]) << 16;
         case 10:
-            k2 ^= ((u64)tail[9]) << 8;
+            k2 ^= ((U64)tail[9]) << 8;
         case 9:
-            k2 ^= ((u64)tail[8]) << 0;
+            k2 ^= ((U64)tail[8]) << 0;
             k2 *= c2;
             k2 = ROTL64(k2, 33);
             k2 *= c1;
             h2 ^= k2;
         case 8:
-            k1 ^= ((u64)tail[7]) << 56;
+            k1 ^= ((U64)tail[7]) << 56;
         case 7:
-            k1 ^= ((u64)tail[6]) << 48;
+            k1 ^= ((U64)tail[6]) << 48;
         case 6:
-            k1 ^= ((u64)tail[5]) << 40;
+            k1 ^= ((U64)tail[5]) << 40;
         case 5:
-            k1 ^= ((u64)tail[4]) << 32;
+            k1 ^= ((U64)tail[4]) << 32;
         case 4:
-            k1 ^= ((u64)tail[3]) << 24;
+            k1 ^= ((U64)tail[3]) << 24;
         case 3:
-            k1 ^= ((u64)tail[2]) << 16;
+            k1 ^= ((U64)tail[2]) << 16;
         case 2:
-            k1 ^= ((u64)tail[1]) << 8;
+            k1 ^= ((U64)tail[1]) << 8;
         case 1:
-            k1 ^= ((u64)tail[0]) << 0;
+            k1 ^= ((U64)tail[0]) << 0;
             k1 *= c1;
             k1 = ROTL64(k1, 31);
             k1 *= c2;
@@ -127,13 +127,25 @@ static void hash(const void *key, const u64 length, const u32 seed, u64 *high,
     *low = h1;
 }
 
-const char *String_begin(String a) { return manager.buffer + a.index; }
+const char* String_begin(String a)
+{
+    return manager.buffer + a.index;
+}
 
-const char *String_end(String a) { return manager.buffer + a.index + a.size; }
+const char* String_end(String a)
+{
+    return manager.buffer + a.index + a.size;
+}
 
-Boolean String_empty(String a) { return !a.index; }
+Boolean String_empty(String a)
+{
+    return !a.index;
+}
 
-Boolean String_equal(String a, String b) { return a.index == b.index; }
+Boolean String_equal(String a, String b)
+{
+    return a.index == b.index;
+}
 
 void String_init()
 {
@@ -141,10 +153,10 @@ void String_init()
     manager.buffer_capacity = 32;
     manager.set_size = 0;
     manager.set_capacity = 4;
-    manager.seed = (u32)time(NULL);
+    manager.seed = (U32)time(NULL);
 
-    manager.buffer = (char *)malloc(sizeof(char) * manager.buffer_capacity);
-    manager.set = (String *)malloc(sizeof(String) * manager.set_capacity);
+    manager.buffer = (char*)malloc(sizeof(char) * manager.buffer_capacity);
+    manager.set = (String*)malloc(sizeof(String) * manager.set_capacity);
 
     if (!manager.buffer || !manager.set)
     {
@@ -164,7 +176,7 @@ void String_free()
     manager.set = NULL;
 }
 
-String String_new(const char *ptr, size_t size)
+String String_new(const char* ptr, size_t size)
 {
     if (!size)
     {
@@ -178,10 +190,10 @@ String String_new(const char *ptr, size_t size)
 
     if (manager.set_size > (manager.set_capacity >> 2) * 3)
     {
-        String *tmp = NULL;
+        String* tmp = NULL;
         size_t tmp_capacity = manager.set_capacity << 1;
 
-        tmp = (String *)malloc(sizeof(String) * tmp_capacity);
+        tmp = (String*)malloc(sizeof(String) * tmp_capacity);
 
         if (!tmp)
         {
@@ -219,7 +231,7 @@ String String_new(const char *ptr, size_t size)
         manager.set_capacity = tmp_capacity;
     }
 
-    u64 hash_high, hash_low;
+    U64 hash_high, hash_low;
     hash(ptr, size, manager.seed, &hash_high, &hash_low);
 
     size_t k = hash_high % manager.set_capacity;
@@ -231,10 +243,10 @@ String String_new(const char *ptr, size_t size)
         {
             if (manager.buffer_size + size + 1 > manager.buffer_capacity)
             {
-                char *tmp = NULL;
+                char* tmp = NULL;
 
                 size_t tmp_capacity = (manager.buffer_size + size + 1) << 1;
-                tmp = (char *)malloc(sizeof(char) * tmp_capacity);
+                tmp = (char*)malloc(sizeof(char) * tmp_capacity);
 
                 if (!tmp)
                 {

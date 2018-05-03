@@ -4,30 +4,36 @@ Stack Stack_create(size_t sizeof_value)
 {
     Stack self;
     self.sizeof_value = sizeof_value;
-    self.buffer = (u8 *)malloc(self.sizeof_value * 8);
+    self.buffer = (U8*)malloc(self.sizeof_value * 8);
 
-    if (!self.buffer) Panic(Memory_Error);
+    if (!self.buffer)
+        Panic(Memory_Error);
 
     self.size = 0;
     self.capacity = 8;
     return self;
 }
 
-void Stack_destroy(Stack *self)
+void Stack_destroy(Stack* self)
 {
     free(self->buffer);
     self->buffer = NULL;
 }
 
-void Stack_clear(Stack *self) { self->size = 0; }
-
-static void Stack_reserve(Stack *self, size_t n)
+void Stack_clear(Stack* self)
 {
-    if (n <= self->capacity) return;
+    self->size = 0;
+}
 
-    u8 *tmp_buffer = (u8 *)malloc(self->sizeof_value * n);
+static void Stack_reserve(Stack* self, size_t n)
+{
+    if (n <= self->capacity)
+        return;
 
-    if (!tmp_buffer) Panic(Memory_Error);
+    U8* tmp_buffer = (U8*)malloc(self->sizeof_value * n);
+
+    if (!tmp_buffer)
+        Panic(Memory_Error);
 
     memcpy(tmp_buffer, self->buffer, self->sizeof_value * self->size);
     free(self->buffer);
@@ -35,7 +41,7 @@ static void Stack_reserve(Stack *self, size_t n)
     self->capacity = n;
 }
 
-static void Stack_resize(Stack *self, size_t n)
+static void Stack_resize(Stack* self, size_t n)
 {
     if (n <= self->capacity)
     {
@@ -47,11 +53,17 @@ static void Stack_resize(Stack *self, size_t n)
     self->size = n;
 }
 
-void Stack_grow(Stack *self, size_t n) { Stack_resize(self, self->size + n); }
+void Stack_grow(Stack* self, size_t n)
+{
+    Stack_resize(self, self->size + n);
+}
 
-void Stack_shrink(Stack *self, size_t n) { Stack_resize(self, self->size - n); }
+void Stack_shrink(Stack* self, size_t n)
+{
+    Stack_resize(self, self->size - n);
+}
 
-void Stack_push(Stack *self, void *value)
+void Stack_push(Stack* self, void* value)
 {
     if (self->size == self->capacity)
     {
@@ -63,7 +75,7 @@ void Stack_push(Stack *self, void *value)
     self->size += 1;
 }
 
-void Stack_push_stack(Stack *self, Stack *other)
+void Stack_push_stack(Stack* self, Stack* other)
 {
     if (self->size + other->size >= self->capacity)
     {
@@ -74,4 +86,9 @@ void Stack_push_stack(Stack *self, Stack *other)
            other->buffer + self->sizeof_value * other->size,
            self->sizeof_value * other->size);
     self->size += other->size;
+}
+
+void* Stack_get(Stack* self, size_t index)
+{
+    return self->buffer + (self->sizeof_value * index);
 }

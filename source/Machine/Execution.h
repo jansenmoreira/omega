@@ -218,12 +218,12 @@ typedef enum Instructions
 typedef union Program {
     Instructions instruction;
 
-    u64 imm_i64;
-    u32 imm_i32[2];
-    u16 imm_i16[4];
-    u8 imm_i8[8];
-    fp64 imm_fp64;
-    fp32 imm_fp32[2];
+    U64 imm_i64;
+    U32 imm_i32[2];
+    U16 imm_i16[4];
+    U8 imm_i8[8];
+    FP64 imm_fp64;
+    FP32 imm_fp32[2];
     void* ptr;
 } Program;
 

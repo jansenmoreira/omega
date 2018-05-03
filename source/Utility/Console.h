@@ -3,7 +3,7 @@
 
 #include <Utility/Standard.h>
 
-MEMORY(char*) Read();
+char* Read();
 
 Boolean Error(const char* format, ...);
 

@@ -5,10 +5,11 @@ Map Map_create(size_t sizeof_value)
     size_t initial_capacity = 4;
     Map self;
     self.sizeof_value = sizeof_value;
-    self.values = (u8 *)malloc(self.sizeof_value * initial_capacity);
-    self.keys = (String *)malloc(sizeof(String) * initial_capacity);
+    self.values = (U8*)malloc(self.sizeof_value * initial_capacity);
+    self.keys = (String*)malloc(sizeof(String) * initial_capacity);
 
-    if (!self.values || !self.keys) Panic(Memory_Error);
+    if (!self.values || !self.keys)
+        Panic(Memory_Error);
 
     self.size = 0;
     self.capacity = initial_capacity;
@@ -17,7 +18,7 @@ Map Map_create(size_t sizeof_value)
     return self;
 }
 
-void Map_destroy(Map *self)
+void Map_destroy(Map* self)
 {
     free(self->values);
     free(self->keys);
@@ -25,7 +26,7 @@ void Map_destroy(Map *self)
     self->keys = NULL;
 }
 
-void *Map_get(Map *self, String key)
+void* Map_get(Map* self, String key)
 {
     size_t k = key.hash % self->capacity;
     size_t j = 1;
@@ -46,18 +47,19 @@ void *Map_get(Map *self, String key)
     }
 }
 
-void *Map_set(Map *self, String key, void *value)
+void* Map_set(Map* self, String key, void* value)
 {
     if (self->size >= (self->capacity * 3) >> 2)
     {
-        String *tmp_keys = NULL;
-        u8 *tmp_values = NULL;
+        String* tmp_keys = NULL;
+        U8* tmp_values = NULL;
         size_t tmp_capacity = self->capacity << 1;
 
-        tmp_keys = (String *)malloc(sizeof(String) * tmp_capacity);
-        tmp_values = (u8 *)malloc(self->sizeof_value * tmp_capacity);
+        tmp_keys = (String*)malloc(sizeof(String) * tmp_capacity);
+        tmp_values = (U8*)malloc(self->sizeof_value * tmp_capacity);
 
-        if (!tmp_keys || !tmp_values) Panic(Memory_Error);
+        if (!tmp_keys || !tmp_values)
+            Panic(Memory_Error);
 
         memset(tmp_keys, 0, sizeof(String) * tmp_capacity);
 

@@ -6,13 +6,13 @@
 
 typedef struct Machine
 {
-    u8* buffer;
+    U8* buffer;
 
     size_t capacity;
     size_t base;
     size_t size;
 
-    u8 cmp;
+    U8 cmp;
 } Machine;
 
 Machine Machine_create(size_t initial_memory);

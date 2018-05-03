@@ -113,9 +113,9 @@ int get_keyword(String key)
     return *MAP_GET(int, keywords, key);
 }
 
-static u32 code_page_from_buffer(const char* buffer)
+static U32 code_page_from_buffer(const char* buffer)
 {
-    u32 code_page;
+    U32 code_page;
 
     switch (buffer[0] & 0xF0)
     {

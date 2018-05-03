@@ -590,11 +590,11 @@ void Type_print_value(Type* type, void* value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu8, *((u8*)value));
+                        Print("%" PRIu8, *((U8*)value));
                     }
                     else
                     {
-                        Print("%" PRIi8, *((s8*)value));
+                        Print("%" PRIi8, *((S8*)value));
                     }
 
                     break;
@@ -603,11 +603,11 @@ void Type_print_value(Type* type, void* value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu16, *((u16*)value));
+                        Print("%" PRIu16, *((U16*)value));
                     }
                     else
                     {
-                        Print("%" PRIi16, *((s16*)value));
+                        Print("%" PRIi16, *((S16*)value));
                     }
 
                     break;
@@ -616,11 +616,11 @@ void Type_print_value(Type* type, void* value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu32, *((u32*)value));
+                        Print("%" PRIu32, *((U32*)value));
                     }
                     else
                     {
-                        Print("%" PRIi32, *((s32*)value));
+                        Print("%" PRIi32, *((S32*)value));
                     }
 
                     break;
@@ -629,11 +629,11 @@ void Type_print_value(Type* type, void* value)
                 {
                     if (!casted->is_signed)
                     {
-                        Print("%" PRIu64, *((u64*)value));
+                        Print("%" PRIu64, *((U64*)value));
                     }
                     else
                     {
-                        Print("%" PRIi64, *((s64*)value));
+                        Print("%" PRIi64, *((S64*)value));
                     }
 
                     break;
@@ -671,7 +671,7 @@ void Type_print_value(Type* type, void* value)
             for (size_t i = 0; i < casted->size; i++)
             {
                 Type_print_value(casted->type, value);
-                value = ((u8*)value) + Type_size(casted->type);
+                value = ((U8*)value) + Type_size(casted->type);
                 Print(", ");
             }
 
@@ -682,7 +682,7 @@ void Type_print_value(Type* type, void* value)
         case TYPE_POINTER:
         case TYPE_FUNCTION:
         {
-            Print("%016" PRIX64, *(u64 **)(value));
+            Print("%016" PRIX64, *(U64**)(value));
             break;
         }
         case TYPE_TUPLE:
@@ -695,7 +695,7 @@ void Type_print_value(Type* type, void* value)
             {
                 Type* field_type = STACK_GET(Type*, casted->fields, i);
                 Type_print_value(field_type, value);
-                value = ((u8*)value) + Type_size(field_type);
+                value = ((U8*)value) + Type_size(field_type);
                 Print(", ");
             }
 
@@ -713,7 +713,7 @@ void Type_print_value(Type* type, void* value)
                 Print("%s : ", String_begin(STACK_GET(String, casted->ids, i)));
                 Type* field_type = STACK_GET(Type*, casted->fields, i);
                 Type_print_value(field_type, value);
-                value = ((u8*)value) + Type_size(field_type);
+                value = ((U8*)value) + Type_size(field_type);
                 Print(", ");
             }
 

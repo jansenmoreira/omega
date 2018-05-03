@@ -40,7 +40,7 @@ static char* Read_Fallback()
     return line;
 }
 
-MEMORY(char*) Read()
+char* Read()
 {
     switch (GetFileType(GetStdHandle(STD_INPUT_HANDLE)))
     {
