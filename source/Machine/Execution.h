@@ -215,6 +215,17 @@ typedef enum Instructions
     INS_NATIVE_CALL,
 } Instructions;
 
+typedef enum Program_Type
+{
+    Program_Type_I8,
+    Program_Type_I16,
+    Program_Type_I32,
+    Program_Type_I64,
+    Program_Type_FP32,
+    Program_Type_FP64,
+    Program_Type_Struct
+} Program_Type;
+
 typedef union Program {
     Instructions instruction;
 

@@ -33,14 +33,12 @@ add_executable(
     #source/Interpreter/Interpreter.c
     #source/Interpreter/Interpreter.h
     
-    source/Machine/Call.asm
-    source/Machine/Call.h
+    source/Machine/Native_Call.asm
+    source/Machine/Native_Call.h
     source/Machine/Execution.c
     source/Machine/Execution.h
     source/Machine/Machine.c
     source/Machine/Machine.h
-    #source/Machine/Native_Call.h
-    #source/Machine/Native_Call.asm
 
     source/Utility/Standard.h
     source/Utility/Console.c

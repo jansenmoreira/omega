@@ -1709,7 +1709,6 @@ void execute(Program* program, Machine* machine)
             }
             case INS_NATIVE_CALL:
             {
-                /*
                 U64 number_of_parameters = (program + counter + 3)->imm_i64;
 
                 if (machine->size + ((number_of_parameters + 1) * 2) >
@@ -1731,44 +1730,185 @@ void execute(Program* program, Machine* machine)
                 void* function_pointer =
                     (void*)((program + counter + 1)->imm_i64);
 
-                U32 return_type = (program + counter + 2)->imm_i32[0];
-                U32 return_size = (program + counter + 2)->imm_i32[1];
+                U64 return_type = (program + counter + 2)->imm_i32[0];
+                U64 return_size = (program + counter + 2)->imm_i32[1];
 
                 U8* ptr = machine->buffer + machine->size;
 
-                size_t adjust = 0;
+                size_t amount_to_shrink = 0;
 
                 for (size_t it = number_of_parameters; it > 0; it--)
                 {
-                    U32 param_type = (program + counter + it + 3)->imm_i32[0];
-                    U32 param_size = (program + counter + it + 3)->imm_i32[1];
+                    U64 param_type = (program + counter + it + 3)->imm_i32[0];
+                    U64 param_size = (program + counter + it + 3)->imm_i32[1];
+
+                    Call_Type_And_Value* param =
+                        (Call_Type_And_Value*)(machine->buffer + machine->size +
+                                               (it *
+                                                sizeof(Call_Type_And_Value)));
 
                     ptr -= param_size;
-                    adjust += param_size;
 
-                    Native_Call_Value* param =
-                        (Native_Call_Value*)(machine->buffer + machine->size +
-                                             (it * sizeof(Native_Call_Value)));
-                    param->type = param_type;
-                    param->size = param_size;
-                    param->value = ptr;
+                    switch (param_type)
+                    {
+                        case Program_Type_I8:
+                        {
+                            param->type = Call_Type_I8;
+                            param->value.u8[0] = *(U8*)(ptr);
+                            break;
+                        }
+                        case Program_Type_I16:
+                        {
+                            param->type = Call_Type_I16;
+                            param->value.u16[0] = *(U16*)(ptr);
+                            break;
+                        }
+                        case Program_Type_I32:
+                        {
+                            param->type = Call_Type_I32;
+                            param->value.u32[0] = *(U32*)(ptr);
+                            break;
+                        }
+                        case Program_Type_I64:
+                        {
+                            param->type = Call_Type_I64;
+                            param->value.u64 = *(U64*)(ptr);
+                            break;
+                        }
+                        case Program_Type_FP32:
+                        {
+                            param->type = Call_Type_FP32;
+                            param->value.fp32[0] = *(FP32*)(ptr);
+                            break;
+                        }
+                        case Program_Type_FP64:
+                        {
+                            param->type = Call_Type_FP64;
+                            param->value.fp64 = *(FP64*)(ptr);
+                            break;
+                        }
+                        case Program_Type_Struct:
+                        {
+                            switch (param_size)
+                            {
+                                case 1:
+                                {
+                                    param->type = Call_Type_I8;
+                                    param->value.u8[0] = *(U8*)(ptr);
+                                    break;
+                                }
+                                case 2:
+                                {
+                                    param->type = Call_Type_I16;
+                                    param->value.u16[0] = *(U16*)(ptr);
+                                    break;
+                                }
+                                case 4:
+                                {
+                                    param->type = Call_Type_I32;
+                                    param->value.u32[0] = *(U32*)(ptr);
+                                    break;
+                                }
+                                case 8:
+                                {
+                                    param->type = Call_Type_I64;
+                                    param->value.u64 = *(U64*)(ptr);
+                                    break;
+                                }
+                                default:
+                                {
+                                    param->type = Call_Type_Struct;
+                                    param->value.ptr = ptr;
+                                    break;
+                                }
+                            }
+
+                            break;
+                        }
+                    }
+
+                    auto a = 1;
                 }
 
-                ptr -= return_size;
+                Call_Type_And_Value* ret =
+                    (Call_Type_And_Value*)(machine->buffer + machine->size);
 
-                Native_Call_Value* ret =
-                    (Native_Call_Value*)(machine->buffer + machine->size);
+                switch (return_type)
+                {
+                    case Program_Type_I8:
+                    {
+                        ret->type = Call_Type_I8;
+                        break;
+                    }
+                    case Program_Type_I16:
+                    {
+                        ret->type = Call_Type_I16;
+                        break;
+                    }
+                    case Program_Type_I32:
+                    {
+                        ret->type = Call_Type_I32;
+                        break;
+                    }
+                    case Program_Type_I64:
+                    {
+                        ret->type = Call_Type_I64;
+                        break;
+                    }
+                    case Program_Type_FP32:
+                    {
+                        ret->type = Call_Type_FP32;
+                        break;
+                    }
+                    case Program_Type_FP64:
+                    {
+                        ret->type = Call_Type_FP64;
+                        break;
+                    }
+                    case Program_Type_Struct:
+                    {
+                        switch (return_size)
+                        {
+                            case 1:
+                            {
+                                ret->type = Call_Type_I8;
+                                break;
+                            }
+                            case 2:
+                            {
+                                ret->type = Call_Type_I16;
+                                break;
+                            }
+                            case 4:
+                            {
+                                ret->type = Call_Type_I32;
+                                break;
+                            }
+                            case 8:
+                            {
+                                ret->type = Call_Type_I64;
+                                break;
+                            }
+                            default:
+                            {
+                                ret->type = Call_Type_Struct;
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                }
+
                 ret->type = return_type;
-                ret->size = return_size;
-                ret->value = ptr;
+                ret->value.ptr = ptr;
 
                 Native_Call(function_pointer, *ret, number_of_parameters,
                             ret + 1);
 
-
-                machine->size -= adjust;
+                machine->size -=
+                    (size_t)((machine->buffer + machine->size) - (ptr));
                 counter += 4 + number_of_parameters;
-                */
                 break;
             }
             default:
