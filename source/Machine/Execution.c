@@ -16,84 +16,28 @@ void execute(Program* program, Machine* machine)
 
             case INS_ALLOC_8:
             {
-                if (machine->size + 1 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 1) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
+                Machine_alloc(machine, 1);
                 machine->size += 1;
                 counter += 1;
                 break;
             }
             case INS_ALLOC_16:
             {
-                if (machine->size + 2 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 2) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
+                Machine_alloc(machine, 2);
                 machine->size += 2;
                 counter += 1;
                 break;
             }
             case INS_ALLOC_32:
             {
-                if (machine->size + 4 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 4) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
+                Machine_alloc(machine, 4);
                 machine->size += 4;
                 counter += 1;
                 break;
             }
             case INS_ALLOC_64:
             {
-                if (machine->size + 8 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 8) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
+                Machine_alloc(machine, 8);
                 machine->size += 8;
                 counter += 1;
                 break;
@@ -101,22 +45,7 @@ void execute(Program* program, Machine* machine)
             case INS_ALLOC_N:
             {
                 U64 size = (program + counter + 1)->imm_i64;
-
-                if (machine->size + size > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + size) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
+                Machine_alloc(machine, size);
                 machine->size += size;
                 counter += 2;
                 break;
@@ -124,20 +53,7 @@ void execute(Program* program, Machine* machine)
 
             case INS_PUSH_8:
             {
-                if (machine->size + 1 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 1) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
+                Machine_alloc(machine, 1);
 
                 U8 value = (program + counter + 1)->imm_i8[0];
                 *(U8*)(machine->buffer + machine->size) = value;
@@ -148,20 +64,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_16:
             {
-                if (machine->size + 2 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 2) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
+                Machine_alloc(machine, 2);
 
                 U16 value = (program + counter + 1)->imm_i16[0];
                 *(U16*)(machine->buffer + machine->size) = value;
@@ -172,20 +75,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_32:
             {
-                if (machine->size + 4 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 4) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
+                Machine_alloc(machine, 4);
 
                 U32 value = (program + counter + 1)->imm_i32[0];
                 *(U32*)(machine->buffer + machine->size) = value;
@@ -196,20 +86,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_64:
             {
-                if (machine->size + 8 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 8) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
+                Machine_alloc(machine, 8);
 
                 U64 value = (program + counter + 1)->imm_i64;
                 *(U64*)(machine->buffer + machine->size) = value;
@@ -218,62 +95,158 @@ void execute(Program* program, Machine* machine)
                 counter += 2;
                 break;
             }
-            case INS_PUSH_N:
-            {
-                U8* ptr = (U8*)((program + counter + 1)->imm_i64);
-                U64 size = (program + counter + 2)->imm_i64;
 
-                if (machine->size + 8 > machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 8) << 1));
-
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->buffer, machine->size);
-
-                    machine->buffer = buffer;
-                }
-
-                memcpy(machine->buffer + machine->size, ptr, size);
-
-                machine->size += size;
-                counter += 3;
-                break;
-            }
-            case INS_POP_8:
+            case INS_FREE_8:
             {
                 machine->size -= 1;
                 counter += 1;
                 break;
             }
-            case INS_POP_16:
+            case INS_FREE_16:
             {
                 machine->size -= 2;
                 counter += 1;
                 break;
             }
-            case INS_POP_32:
+            case INS_FREE_32:
             {
                 machine->size -= 4;
                 counter += 1;
                 break;
             }
-            case INS_POP_64:
+            case INS_FREE_64:
             {
                 machine->size -= 8;
                 counter += 1;
                 break;
             }
-            case INS_POP_N:
+            case INS_FREE_N:
             {
                 machine->size -= (program + counter + 1)->imm_i64;
                 counter += 2;
                 break;
             }
+
+            case INS_LOAD_8:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                Machine_alloc(machine, 1);
+
+                *(U8*)(machine->buffer + machine->size) =
+                    *(U8*)(machine->buffer + address);
+
+                machine->size += 1;
+                counter += 2;
+                break;
+            }
+            case INS_LOAD_16:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                Machine_alloc(machine, 2);
+
+                *(U16*)(machine->buffer + machine->size) =
+                    *(U16*)(machine->buffer + address);
+
+                machine->size += 2;
+                counter += 2;
+                break;
+            }
+            case INS_LOAD_32:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                Machine_alloc(machine, 4);
+
+                *(U32*)(machine->buffer + machine->size) =
+                    *(U32*)(machine->buffer + address);
+
+                machine->size += 4;
+                counter += 2;
+                break;
+            }
+            case INS_LOAD_64:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                Machine_alloc(machine, 8);
+
+                *(U64*)(machine->buffer + machine->size) =
+                    *(U64*)(machine->buffer + address);
+
+                machine->size += 8;
+                counter += 2;
+                break;
+            }
+            case INS_LOAD_N:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                size_t size = (program + counter + 2)->imm_i64;
+
+                Machine_alloc(machine, size);
+
+                memcpy(machine->buffer + machine->size,
+                       machine->buffer + address, size);
+
+                machine->size += size;
+                counter += 3;
+                break;
+            }
+
+            case INS_STORE_8:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+
+                *(U8*)(machine->buffer + address) =
+                    *(U8*)(machine->buffer + machine->size - 1);
+
+                machine->size -= 1;
+                counter += 2;
+                break;
+            }
+            case INS_STORE_16:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+
+                *(U16*)(machine->buffer + address) =
+                    *(U16*)(machine->buffer + machine->size - 2);
+
+                machine->size -= 2;
+                counter += 2;
+                break;
+            }
+            case INS_STORE_32:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+
+                *(U32*)(machine->buffer + address) =
+                    *(U32*)(machine->buffer + machine->size - 4);
+
+                machine->size -= 4;
+                counter += 2;
+                break;
+            }
+            case INS_STORE_64:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+
+                *(U64*)(machine->buffer + address) =
+                    *(U64*)(machine->buffer + machine->size - 8);
+
+                machine->size -= 8;
+                counter += 2;
+                break;
+            }
+            case INS_STORE_N:
+            {
+                size_t address = (program + counter + 1)->imm_i64;
+                size_t size = (program + counter + 2)->imm_i64;
+
+                memcpy(machine->buffer + address,
+                       machine->buffer + machine->size - size, size);
+
+                machine->size -= size;
+                counter += 3;
+                break;
+            }
+
             case INS_MOV_8:
             {
                 U8* ptr = (U8*)((program + counter + 1)->imm_i64);

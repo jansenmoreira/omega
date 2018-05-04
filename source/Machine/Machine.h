@@ -19,4 +19,6 @@ Machine Machine_create(size_t initial_memory);
 
 void Machine_destroy(Machine* self);
 
+void Machine_alloc(Machine* self);
+
 #endif

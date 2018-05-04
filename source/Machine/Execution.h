@@ -14,17 +14,28 @@ typedef enum Instructions
     INS_ALLOC_64,
     INS_ALLOC_N,
 
+    INS_FREE_8,
+    INS_FREE_16,
+    INS_FREE_32,
+    INS_FREE_64,
+    INS_FREE_N,
+
+    INS_LOAD_8,
+    INS_LOAD_16,
+    INS_LOAD_32,
+    INS_LOAD_64,
+    INS_LOAD_N,
+
+    INS_STORE_8,
+    INS_STORE_16,
+    INS_STORE_32,
+    INS_STORE_64,
+    INS_STORE_N,
+
     INS_PUSH_8,
     INS_PUSH_16,
     INS_PUSH_32,
     INS_PUSH_64,
-    INS_PUSH_N,
-
-    INS_POP_8,
-    INS_POP_16,
-    INS_POP_32,
-    INS_POP_64,
-    INS_POP_N,
 
     INS_MOV_8,
     INS_MOV_16,
