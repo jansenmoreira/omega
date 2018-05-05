@@ -86,3 +86,10 @@ add_executable(
 )
 
 target_link_libraries(omega-cli omega-utility omega-structures omega-machine)
+
+add_executable(
+    omega-test-machine
+    tests/Machine.c
+)
+
+target_link_libraries(omega-test-machine omega-utility omega-structures omega-machine)
