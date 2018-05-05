@@ -47,11 +47,11 @@ enum Numeric_Type
 
 typedef struct Unicode
 {
-    char general_categories;
-    char xid_start;
-    char xid_continue;
-    char numeric_type;
-    char numeric_value;
+    U16 general_categories : 5;
+    U16 xid_start : 1;
+    U16 xid_continue : 1;
+    U16 numeric_type : 2;
+    U16 numeric_value : 7;
 } Unicode;
 
 extern const Unicode UCD[1114112];
