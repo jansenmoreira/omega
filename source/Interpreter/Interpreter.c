@@ -1,7 +1,7 @@
-/*
 #include <Interpreter/Interpreter.h>
-#include <Interpreter/Machine.h>
+#include <Machine/Execution.h>
 
+/*
 typedef struct Interpreter
 {
     Lexer* lexer;

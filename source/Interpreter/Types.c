@@ -5,7 +5,9 @@ Type_Integer* Type_Integer_create(size_t size, int is_signed)
     Type_Integer* self = (Type_Integer*)malloc(sizeof(Type_Integer));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_INTEGER;
     self->size = size;
@@ -18,7 +20,9 @@ Type_Float* Type_Float_create(size_t size)
     Type_Float* self = (Type_Float*)malloc(sizeof(Type_Float));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_FLOAT;
     self->size = size;
@@ -30,7 +34,9 @@ Type_Array* Type_Array_create(Type* type, size_t size)
     Type_Array* self = (Type_Array*)malloc(sizeof(Type_Array));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_ARRAY;
     self->type = type;
@@ -43,7 +49,9 @@ Type_Pointer* Type_Pointer_create(Type* type)
     Type_Pointer* self = (Type_Pointer*)malloc(sizeof(Type_Pointer));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_POINTER;
     self->type = type;
@@ -55,10 +63,12 @@ Type_Tuple* Type_Tuple_create()
     Type_Tuple* self = (Type_Tuple*)malloc(sizeof(Type_Tuple));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_TUPLE;
-    self->fields = STACK_CREATE(Type*);
+    self->fields = Stack_create(sizeof(Type*));
     return self;
 }
 
@@ -67,11 +77,13 @@ Type_Struct* Type_Struct_create()
     Type_Struct* self = (Type_Struct*)malloc(sizeof(Type_Struct));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_STRUCT;
-    self->fields = STACK_CREATE(Type*);
-    self->ids = STACK_CREATE(String);
+    self->fields = Stack_create(sizeof(Type*));
+    self->ids = Stack_create(sizeof(String));
     return self;
 }
 
@@ -80,10 +92,12 @@ Type_Function* Type_Function_create()
     Type_Function* self = (Type_Function*)malloc(sizeof(Type_Function));
 
     if (!self)
+    {
         Panic(Memory_Error);
+    }
 
     self->type_id = TYPE_FUNCTION;
-    self->params = STACK_CREATE(Type*);
+    self->params = Stack_create(sizeof(Type*));
     return self;
 }
 
@@ -113,10 +127,10 @@ void Type_Tuple_destroy(Type_Tuple* self)
 {
     for (size_t i = 0; i < self->fields.size; i++)
     {
-        Type_destroy(STACK_GET(Type*, self->fields, i));
+        Type_destroy(*(Type**)Stack_get(&self->fields, i));
     }
 
-    STACK_DESTROY(Type*, self->fields);
+    Stack_destroy(&self->fields);
     free(self);
 }
 
@@ -124,11 +138,11 @@ void Type_Struct_destroy(Type_Struct* self)
 {
     for (size_t i = 0; i < self->fields.size; i++)
     {
-        Type_destroy(STACK_GET(Type*, self->fields, i));
+        Type_destroy(*(Type**)Stack_get(&self->fields, i));
     }
 
-    STACK_DESTROY(Type*, self->fields);
-    STACK_DESTROY(String, self->ids);
+    Stack_destroy(&self->fields);
+    Stack_destroy(&self->ids);
     free(self);
 }
 
@@ -136,10 +150,10 @@ void Type_Function_destroy(Type_Function* self)
 {
     for (size_t i = 0; i < self->params.size; i++)
     {
-        Type_destroy(STACK_GET(Type*, self->params, i));
+        Type_destroy(*(Type**)Stack_get(&self->params, i));
     }
 
-    STACK_DESTROY(Type*, self->params);
+    Stack_destroy(&self->params);
     free(self);
 }
 
@@ -217,8 +231,8 @@ Type* Type_Copy(Type* type)
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
-                Type* field = Type_Copy(STACK_GET(Type*, casted->fields, i));
-                STACK_PUSH(Type*, copy->fields, field);
+                Type* field = Type_Copy(*(Type**)Stack_get(&casted->fields, i));
+                Stack_push(&copy->fields, &field);
             }
 
             return (Type*)copy;
@@ -231,12 +245,12 @@ Type* Type_Copy(Type* type)
             for (size_t i = 1; i < casted->fields.size; i++)
             {
                 Type* field_type =
-                    Type_Copy(STACK_GET(Type*, casted->fields, i));
+                    Type_Copy(*(Type**)Stack_get(&casted->fields, i));
 
-                String field_name = STACK_GET(String, casted->ids, i);
+                String field_name = *(String*)Stack_get(&casted->ids, i);
 
-                STACK_PUSH(Type*, copy->fields, field_type);
-                STACK_PUSH(String, copy->ids, field_name);
+                Stack_push(&copy->fields, &field_type);
+                Stack_push(&copy->ids, &field_name);
             }
 
             return (Type*)copy;
@@ -249,8 +263,8 @@ Type* Type_Copy(Type* type)
 
             for (size_t i = 1; i < casted->params.size; i++)
             {
-                Type* field = Type_Copy(STACK_GET(Type*, casted->params, i));
-                STACK_PUSH(Type*, copy->params, field);
+                Type* field = Type_Copy(*(Type**)Stack_get(&casted->params, i));
+                Stack_push(&copy->params, &field);
             }
 
             return (Type*)copy;
@@ -292,7 +306,7 @@ size_t Type_size(Type* type)
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
-                size += Type_size(STACK_GET(Type*, casted->fields, i));
+                size += Type_size(*(Type**)Stack_get(&casted->fields, i));
             }
 
             return size;
@@ -305,7 +319,7 @@ size_t Type_size(Type* type)
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
-                size += Type_size(STACK_GET(Type*, casted->fields, i));
+                size += Type_size(*(Type**)Stack_get(&casted->fields, i));
             }
 
             return size;
@@ -386,8 +400,8 @@ Boolean Type_equal(Type* a, Type* b)
 
             for (size_t i = 0; i < ac->fields.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type*, ac->fields, i),
-                                STACK_GET(Type*, bc->fields, i)))
+                if (!Type_equal(*(Type**)Stack_get(&ac->fields, i),
+                                *(Type**)Stack_get(&bc->fields, i)))
                 {
                     return False;
                 }
@@ -412,10 +426,10 @@ Boolean Type_equal(Type* a, Type* b)
 
             for (size_t i = 0; i < ac->fields.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type*, ac->fields, i),
-                                STACK_GET(Type*, bc->fields, i)) ||
-                    !String_equal(STACK_GET(String, ac->ids, i),
-                                  STACK_GET(String, bc->ids, i)))
+                if (!Type_equal(*(Type**)Stack_get(&ac->fields, i),
+                                *(Type**)Stack_get(&bc->fields, i)) ||
+                    !String_equal(*(String*)Stack_get(&ac->ids, i),
+                                  *(String*)Stack_get(&bc->ids, i)))
                 {
                     return False;
                 }
@@ -445,8 +459,8 @@ Boolean Type_equal(Type* a, Type* b)
 
             for (size_t i = 0; i < ac->params.size; i++)
             {
-                if (!Type_equal(STACK_GET(Type*, ac->params, i),
-                                STACK_GET(Type*, bc->params, i)))
+                if (!Type_equal(*(Type**)Stack_get(&ac->params, i),
+                                *(Type**)Stack_get(&bc->params, i)))
                 {
                     return False;
                 }
@@ -521,12 +535,12 @@ void Type_print(Type* type)
 
             Print("[");
 
-            Type_print(STACK_GET(Type*, casted->fields, 0));
+            Type_print(*(Type**)Stack_get(&casted->fields, 0));
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type*, casted->fields, i));
+                Type_print(*(Type**)Stack_get(&casted->fields, i));
             }
 
             Print("]");
@@ -539,12 +553,12 @@ void Type_print(Type* type)
 
             Print("{");
 
-            Type_print(STACK_GET(Type*, casted->fields, 0));
+            Type_print(*(Type**)Stack_get(&casted->fields, 0));
 
             for (size_t i = 1; i < casted->fields.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type*, casted->fields, i));
+                Type_print(*(Type**)Stack_get(&casted->fields, i));
             }
 
             Print("}");
@@ -557,12 +571,12 @@ void Type_print(Type* type)
 
             Print("(");
 
-            Type_print(STACK_GET(Type*, casted->params, 0));
+            Type_print(*(Type**)Stack_get(&casted->params, 0));
 
             for (size_t i = 1; i < casted->params.size; i++)
             {
                 Print(", ");
-                Type_print(STACK_GET(Type*, casted->params, i));
+                Type_print(*(Type**)Stack_get(&casted->params, i));
             }
 
             Print(" -> ");
@@ -693,7 +707,7 @@ void Type_print_value(Type* type, void* value)
 
             for (size_t i = 0; i < casted->fields.size; i++)
             {
-                Type* field_type = STACK_GET(Type*, casted->fields, i);
+                Type* field_type = *(Type**)Stack_get(&casted->fields, i);
                 Type_print_value(field_type, value);
                 value = ((U8*)value) + Type_size(field_type);
                 Print(", ");
@@ -710,9 +724,13 @@ void Type_print_value(Type* type, void* value)
 
             for (size_t i = 0; i < casted->fields.size; i++)
             {
-                Print("%s : ", String_begin(STACK_GET(String, casted->ids, i)));
-                Type* field_type = STACK_GET(Type*, casted->fields, i);
+                Print("%s : ",
+                      String_begin(*(String*)Stack_get(&casted->ids, i)));
+
+                Type* field_type = *(Type**)Stack_get(&casted->fields, i);
+
                 Type_print_value(field_type, value);
+
                 value = ((U8*)value) + Type_size(field_type);
                 Print(", ");
             }

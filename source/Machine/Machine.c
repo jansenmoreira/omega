@@ -1,44 +1,89 @@
 #include <Machine/Machine.h>
 
-Machine Machine_create(size_t initial_memory)
+Machine Machine_create()
 {
     Machine self;
 
-    self.stack = (U8*)malloc(sizeof(U8) * initial_memory);
-    self.base = 0;
-    self.size = 0;
-    self.capacity = initial_memory;
+    self.stack.buffer = (Value*)malloc(sizeof(Value) * 1024);
+    self.stack.capacity = 1024;
+    self.stack.size = 0;
 
-    self.cmp = 0;
+    self.local.buffer = (Value**)malloc(sizeof(Value) * 1);
+    self.local.capacity = 32;
+    self.local.size = 0;
 
-    self.local_memory = Stack_create(sizeof(U8*));
-    self.global_memory = Stack_create(sizeof(U8*));
+    self.global.buffer = (PTR*)malloc(sizeof(Value) * 1);
+    self.global.capacity = 32;
+    self.global.size = 0;
+
+    if (!self.stack.buffer || !self.local.buffer || !self.global.buffer)
+    {
+        Panic(Memory_Error);
+    }
 
     return self;
 }
 
-void Machine_alloc(Machine* self, size_t size)
+void Machine_destroy(Machine* self)
 {
-    if (self->size + size > self->capacity)
+    free(self->local.buffer);
+    free(self->global.buffer);
+    free(self->stack.buffer);
+}
+
+void Machine_grow_stack(Machine* self, size_t size)
+{
+    if (self->stack.size + size > self->stack.capacity)
     {
-        size_t capacity = (self->size + size) << 1;
-        U8* buffer = (U8*)malloc(sizeof(U8) * capacity);
+        size_t capacity = (self->stack.size + size) << 1;
+        Value* buffer = (Value*)malloc(sizeof(Value) * capacity);
 
         if (!buffer)
         {
             Panic(Memory_Error);
         }
 
-        memcpy(buffer, self->stack, self->size);
+        memcpy(buffer, self->stack.buffer, self->stack.size);
 
-        self->stack = buffer;
-        self->capacity = capacity;
+        self->stack.buffer = buffer;
+        self->stack.capacity = capacity;
     }
 }
 
-void Machine_destroy(Machine* self)
+void Machine_grow_local(Machine* self, size_t size)
 {
-    Stack_destroy(&self->local_memory);
-    Stack_destroy(&self->global_memory);
-    free(self->stack);
+    if (self->local.size + size > self->local.capacity)
+    {
+        size_t capacity = (self->local.size + size) << 1;
+        Value** buffer = (Value**)malloc(sizeof(Value*) * capacity);
+
+        if (!buffer)
+        {
+            Panic(Memory_Error);
+        }
+
+        memcpy(buffer, self->local.buffer, self->local.size);
+
+        self->local.buffer = buffer;
+        self->local.capacity = capacity;
+    }
+}
+
+void Machine_grow_global(Machine* self, size_t size)
+{
+    if (self->global.size + size > self->global.capacity)
+    {
+        size_t capacity = (self->global.size + size) << 1;
+        PTR* buffer = (PTR*)malloc(sizeof(PTR) * capacity);
+
+        if (!buffer)
+        {
+            Panic(Memory_Error);
+        }
+
+        memcpy(buffer, self->global.buffer, self->global.size);
+
+        self->global.buffer = buffer;
+        self->global.capacity = capacity;
+    }
 }

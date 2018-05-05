@@ -27,90 +27,90 @@ enum State
     State_CHAR4,
 };
 
-MAP(int) keywords;
+Map keywords;
 
 void Lexer_init()
 {
-    keywords = MAP_CREATE(int);
+    keywords = Map_create(sizeof(int));
 
     String s_if = String_new("if", 2);
     int t_if = Tag_IF;
-    MAP_SET(int, keywords, s_if, t_if);
+    Map_set(&keywords, s_if, &t_if);
 
     String s_else = String_new("else", 4);
     int t_else = Tag_ELSE;
-    MAP_SET(int, keywords, s_else, t_else);
+    Map_set(&keywords, s_else, &t_else);
 
     String s_while = String_new("while", 5);
     int t_while = Tag_WHILE;
-    MAP_SET(int, keywords, s_while, t_while);
+    Map_set(&keywords, s_while, &t_while);
 
     String s_return = String_new("return", 6);
     int t_return = Tag_RETURN;
-    MAP_SET(int, keywords, s_return, t_return);
+    Map_set(&keywords, s_return, &t_return);
 
     String s_continue = String_new("continue", 8);
     int t_continue = Tag_CONTINUE;
-    MAP_SET(int, keywords, s_continue, t_continue);
+    Map_set(&keywords, s_continue, &t_continue);
 
     String s_break = String_new("break", 5);
     int t_break = Tag_BREAK;
-    MAP_SET(int, keywords, s_break, t_break);
+    Map_set(&keywords, s_break, &t_break);
 
     String s_var = String_new("var", 3);
     int t_var = Tag_VAR;
-    MAP_SET(int, keywords, s_var, t_var);
+    Map_set(&keywords, s_var, &t_var);
 
     String s_const = String_new("const", 5);
     int t_const = Tag_CONST;
-    MAP_SET(int, keywords, s_const, t_const);
+    Map_set(&keywords, s_const, &t_const);
 
     String s_type = String_new("type", 4);
     int t_type = Tag_TYPE;
-    MAP_SET(int, keywords, s_type, t_type);
+    Map_set(&keywords, s_type, &t_type);
 
     String s_use = String_new("use", 3);
     int t_use = Tag_USE;
-    MAP_SET(int, keywords, s_use, t_use);
+    Map_set(&keywords, s_use, &t_use);
 
     String s_as = String_new("as", 2);
     int t_as = Tag_AS;
-    MAP_SET(int, keywords, s_as, t_as);
+    Map_set(&keywords, s_as, &t_as);
 
     String s_import = String_new("import", 6);
     int t_import = Tag_IMPORT;
-    MAP_SET(int, keywords, s_import, t_import);
+    Map_set(&keywords, s_import, &t_import);
 
     String s_export = String_new("export", 6);
     int t_export = Tag_EXPORT;
-    MAP_SET(int, keywords, s_export, t_export);
+    Map_set(&keywords, s_export, &t_export);
 
     String s_void = String_new("void", 4);
     int t_void = Tag_VOID;
-    MAP_SET(int, keywords, s_void, t_void);
+    Map_set(&keywords, s_void, &t_void);
 
     String s_s_cast = String_new("$cast", 5);
     int t_s_cast = Tag_S_CAST;
-    MAP_SET(int, keywords, s_s_cast, t_s_cast);
+    Map_set(&keywords, s_s_cast, &t_s_cast);
 
     String s_s_size = String_new("$size", 5);
     int t_s_size = Tag_S_SIZE;
-    MAP_SET(int, keywords, s_s_size, t_s_size);
+    Map_set(&keywords, s_s_size, &t_s_size);
 }
 
 void Lexer_free()
 {
-    MAP_DESTROY(int, keywords);
+    Map_destroy(&keywords);
 }
 
 int is_keyword(String key)
 {
-    return MAP_GET(int, keywords, key) ? 1 : 0;
+    return Map_get(&keywords, key) ? 1 : 0;
 }
 
 int get_keyword(String key)
 {
-    return *MAP_GET(int, keywords, key);
+    return *(int*)Map_get(&keywords, key);
 }
 
 static U32 code_page_from_buffer(const char* buffer)
@@ -169,13 +169,13 @@ Lexer Lexer_create(const char* buffer, String path)
     self.path = path;
     self.at = 0;
     self.ignore = 0;
-    self.lexeme = STACK_CREATE(char);
+    self.lexeme = Stack_create(sizeof(char));
     return self;
 }
 
 void Lexer_destroy(Lexer* self)
 {
-    STACK_DESTROY(char, self->lexeme);
+    Stack_destroy(&self->lexeme);
 }
 
 void Lexer_get(Lexer* self)
@@ -234,7 +234,7 @@ Token Lexer_next(Lexer* self)
 
     int state = State_IGNORE;
 
-    STACK_CLEAR(char, self->lexeme);
+    Stack_clear(&self->lexeme);
 
     for (int step = 1; step; Lexer_get(self))
     {
@@ -274,7 +274,7 @@ Token Lexer_next(Lexer* self)
                     case '.':
                         state = State_FLOAT0;
                         p = '.';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         break;
 
                     case '"':
@@ -314,7 +314,7 @@ Token Lexer_next(Lexer* self)
                         else if (is_decimal(self->buffer + self->at))
                         {
                             p = numeric_value_to_ascii(self->buffer + self->at);
-                            STACK_PUSH(char, self->lexeme, p);
+                            Stack_push(&self->lexeme, &p);
                             state = State_INT;
                         }
                         else
@@ -384,7 +384,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                     break;
                 }
 
@@ -392,14 +392,14 @@ Token Lexer_next(Lexer* self)
                 {
                     case '.':
                         p = '.';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_FLOAT1;
                         break;
 
                     case 'e':
                     case 'E':
                         p = 'E';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_FLOAT2;
                         break;
 
@@ -419,7 +419,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                     state = State_FLOAT1;
                 }
                 else
@@ -437,7 +437,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                     break;
                 }
 
@@ -446,7 +446,7 @@ Token Lexer_next(Lexer* self)
                     case 'e':
                     case 'E':
                         p = 'E';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_FLOAT2;
                         break;
 
@@ -466,7 +466,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                     state = State_FLOAT4;
                 }
                 else
@@ -475,13 +475,13 @@ Token Lexer_next(Lexer* self)
                     {
                         case '+':
                             p = '+';
-                            STACK_PUSH(char, self->lexeme, p);
+                            Stack_push(&self->lexeme, &p);
                             state = State_FLOAT3;
                             break;
 
                         case '-':
                             p = '-';
-                            STACK_PUSH(char, self->lexeme, p);
+                            Stack_push(&self->lexeme, &p);
                             state = State_FLOAT3;
                             break;
 
@@ -502,7 +502,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                     state = State_FLOAT4;
                 }
                 else
@@ -522,7 +522,7 @@ Token Lexer_next(Lexer* self)
                 if (is_decimal(self->buffer + self->at))
                 {
                     p = numeric_value_to_ascii(self->buffer + self->at);
-                    STACK_PUSH(char, self->lexeme, p);
+                    Stack_push(&self->lexeme, &p);
                 }
                 else
                 {
@@ -545,7 +545,7 @@ Token Lexer_next(Lexer* self)
                         break;
 
                     default:
-                        STACK_PUSH(char, self->lexeme, c);
+                        Stack_push(&self->lexeme, &c);
                         state = State_CHAR4;
                 }
 
@@ -558,49 +558,49 @@ Token Lexer_next(Lexer* self)
                 {
                     case 'v':
                         p = '\v';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 't':
                         p = '\t';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'n':
                         p = '\n';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'r':
                         p = '\r';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'f':
                         p = '\f';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case '\\':
                         p = '\\';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case '\'':
                         p = '\'';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case '"':
                         p = '"';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
@@ -699,49 +699,49 @@ Token Lexer_next(Lexer* self)
                     case '8':
                     case '9':
                         p = hex + (c - '0');
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'a':
                     case 'A':
                         p = hex + 0x0A;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'b':
                     case 'B':
                         p = hex + 0x0B;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'c':
                     case 'C':
                         p = hex + 0x0C;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'd':
                     case 'D':
                         p = hex + 0x0D;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'e':
                     case 'E':
                         p = hex + 0x0E;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
                     case 'f':
                     case 'F':
                         p = hex + 0x0F;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_CHAR4;
                         break;
 
@@ -795,7 +795,7 @@ Token Lexer_next(Lexer* self)
 
                     case '\n':
                     default:
-                        STACK_PUSH(char, self->lexeme, c);
+                        Stack_push(&self->lexeme, &c);
                 }
 
                 break;
@@ -807,49 +807,49 @@ Token Lexer_next(Lexer* self)
                 {
                     case 'v':
                         p = '\v';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 't':
                         p = '\t';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'n':
                         p = '\n';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'r':
                         p = '\r';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'f':
                         p = '\f';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case '\\':
                         p = '\\';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case '\'':
                         p = '\'';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case '"':
                         p = '\"';
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
@@ -948,49 +948,49 @@ Token Lexer_next(Lexer* self)
                     case '8':
                     case '9':
                         p = hex + (c - '0');
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'a':
                     case 'A':
                         p = hex + 0x0A;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'b':
                     case 'B':
                         p = hex + 0x0B;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'c':
                     case 'C':
                         p = hex + 0x0C;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'd':
                     case 'D':
                         p = hex + 0x0D;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'e':
                     case 'E':
                         p = hex + 0x0E;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 
                     case 'f':
                     case 'F':
                         p = hex + 0x0F;
-                        STACK_PUSH(char, self->lexeme, p);
+                        Stack_push(&self->lexeme, &p);
                         state = State_STRING0;
                         break;
 

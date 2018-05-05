@@ -1,4 +1,3 @@
-/*
 #ifndef INTERPRETER_H
 #define INTERPRETER_H
 
@@ -14,4 +13,3 @@
 void Interpreter_loop();
 
 #endif
-*/

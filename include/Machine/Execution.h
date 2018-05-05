@@ -2,7 +2,7 @@
 #define EXECUTION_H
 
 #include <Machine/Machine.h>
-#include <Machine/Native_Call.h>
+#include <Utility/Native_Call.h>
 
 typedef enum Instructions
 {
@@ -14,13 +14,11 @@ typedef enum Instructions
     INS_LDG_16,
     INS_LDG_32,
     INS_LDG_64,
-    INS_LDG_N,
 
     INS_STG_8,
     INS_STG_16,
     INS_STG_32,
     INS_STG_64,
-    INS_STG_N,
 
     INS_LEAG,
 
@@ -28,13 +26,11 @@ typedef enum Instructions
     INS_LDL_16,
     INS_LDL_32,
     INS_LDL_64,
-    INS_LDL_N,
 
     INS_STL_8,
     INS_STL_16,
     INS_STL_32,
     INS_STL_64,
-    INS_STL_N,
 
     INS_LEAL,
 
@@ -42,36 +38,30 @@ typedef enum Instructions
     INS_LDI_16,
     INS_LDI_32,
     INS_LDI_64,
-    INS_LDI_N,
 
     INS_STI_8,
     INS_STI_16,
     INS_STI_32,
     INS_STI_64,
-    INS_STI_N,
 
     INS_LD_8,
     INS_LD_16,
     INS_LD_32,
     INS_LD_64,
-    INS_LD_N,
 
     INS_ST_8,
     INS_ST_16,
     INS_ST_32,
     INS_ST_64,
-    INS_ST_N,
+
+    INS_COPY,
 
     INS_PUSH_8,
     INS_PUSH_16,
     INS_PUSH_32,
     INS_PUSH_64,
 
-    INS_POP_8,
-    INS_POP_16,
-    INS_POP_32,
-    INS_POP_64,
-    INS_POP_N,
+    INS_POP,
 
     INS_INC_I8,
     INS_INC_I16,
@@ -82,6 +72,18 @@ typedef enum Instructions
     INS_DEC_I16,
     INS_DEC_I32,
     INS_DEC_I64,
+
+    INS_NOT_I8,
+    INS_NOT_I16,
+    INS_NOT_I32,
+    INS_NOT_I64,
+
+    INS_NEG_S8,
+    INS_NEG_S16,
+    INS_NEG_S32,
+    INS_NEG_S64,
+    INS_NEG_FP32,
+    INS_NEG_FP64,
 
     INS_OR_I8,
     INS_OR_I16,
@@ -257,29 +259,11 @@ typedef enum Instructions
     INS_NATIVE_CALL,
 } Instructions;
 
-typedef enum Program_Type
-{
-    Program_Type_I8,
-    Program_Type_I16,
-    Program_Type_I32,
-    Program_Type_I64,
-    Program_Type_FP32,
-    Program_Type_FP64,
-    Program_Type_Struct
-} Program_Type;
-
 typedef union Program {
     Instructions instruction;
-
-    U64 imm_i64;
-    U32 imm_i32[2];
-    U16 imm_i16[4];
-    U8 imm_i8[8];
-    FP64 imm_fp64;
-    FP32 imm_fp32[2];
-    void* ptr;
+    Value immediate;
 } Program;
 
-void __cdecl execute(Program* program, Machine* machine);
+void execute(Program* program, Machine* machine);
 
 #endif

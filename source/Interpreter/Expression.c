@@ -83,7 +83,7 @@ Expression_Tuple* Expression_Tuple_create()
     Expression_Tuple* self =
         (Expression_Tuple*)malloc(sizeof(Expression_Tuple));
     self->expression_id = EXPRESSION_TUPLE;
-    self->fields = STACK_CREATE(Expression*);
+    self->fields = Stack_create(sizeof(Expression*));
     return self;
 }
 
@@ -120,7 +120,7 @@ Expression_Call* Expression_Call_create()
     Expression_Call* self = (Expression_Call*)malloc(sizeof(Expression_Call));
     self->expression_id = EXPRESSION_MEMBER;
     self->callee = NULL;
-    self->arguments = STACK_CREATE(Expression*);
+    self->arguments = Stack_create(sizeof(Expression*));
     return self;
 }
 
@@ -182,10 +182,10 @@ void Expression_Tuple_destroy(Expression_Tuple* self)
 {
     for (size_t i = 0; i < self->fields.size; i++)
     {
-        Expression_destroy(STACK_GET(Expression*, self->fields, i));
+        Expression_destroy(*(Expression**)Stack_get(&self->fields, i));
     }
 
-    STACK_DESTROY(Expression*, self->fields);
+    Stack_destroy(&self->fields);
     free(self);
 }
 
@@ -214,10 +214,10 @@ void Expression_Call_destroy(Expression_Call* self)
 
     for (size_t i = 0; i < self->arguments.size; i++)
     {
-        Expression_destroy(STACK_GET(Expression*, self->arguments, i));
+        Expression_destroy(*(Expression**)Stack_get(&self->arguments, i));
     }
 
-    STACK_DESTROY(Expression*, self->arguments);
+    Stack_destroy(&self->arguments);
     free(self);
 }
 

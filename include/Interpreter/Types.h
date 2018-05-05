@@ -54,22 +54,22 @@ typedef struct Type_Tuple
 {
     Type_ID type_id;
 
-    STACK(Type*) fields;
+    Stack fields;
 } Type_Tuple;
 
 typedef struct Type_Struct
 {
     Type_ID type_id;
 
-    STACK(Type*) fields;
-    STACK(String) ids;
+    Stack fields;
+    Stack ids;
 } Type_Struct;
 
 typedef struct Type_Function
 {
     Type_ID type_id;
 
-    STACK(Type*) params;
+    Stack params;
     Type* return_type;
 } Type_Function;
 

@@ -62,7 +62,7 @@ typedef struct Lexer
     size_t at;
     int ignore;
     String path;
-    STACK(char) lexeme;
+    Stack lexeme;
 } Lexer;
 
 void Lexer_init();

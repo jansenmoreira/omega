@@ -31,4 +31,18 @@ typedef enum Boolean
     True
 } Boolean;
 
+typedef union Value {
+    U8 u8[8];
+    S8 s8[8];
+    U16 u16[4];
+    S16 s16[4];
+    U32 u32[2];
+    S32 s32[2];
+    U64 u64[1];
+    S64 s64[1];
+    FP32 fp32[2];
+    FP64 fp64[1];
+    PTR ptr[1];
+} Value;
+
 #endif
