@@ -37,6 +37,9 @@ repertoire = ucd_xml.find("unicode:repertoire", namespace)
 if not os.path.exists(args.output):
     os.mkdir(args.output)
 
+if not os.path.exists(os.path.join(args.output, "Utility")):
+    os.mkdir(os.path.join(args.output, "Utility"))
+
 with open(os.path.join(args.output, os.path.join("Utility", "UCD.c")), "w") as file:
     file.write("#include <Utility/Unicode.h>\n\n")
     file.write("// {}\n\n".format(description.text))

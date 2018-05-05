@@ -6,7 +6,7 @@ include_directories(include)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NATVIS:${CMAKE_SOURCE_DIR}/omega.natvis")
 
-find_package(PythonInterp 3 REQUIRED)
+find_package(PythonInterp REQUIRED)
 
 add_custom_command(
     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/UCD.py --ucd ${CMAKE_SOURCE_DIR}/scripts/ucd.all.flat.zip --output ${PROJECT_BINARY_DIR}/source
