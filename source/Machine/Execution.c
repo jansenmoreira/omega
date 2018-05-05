@@ -649,6 +649,536 @@ void execute(Program* program, Machine* machine)
                 break;
             }
 
+            case INS_SGNEXT_I8_I16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u16[0] = (src >> 7) ? 0xFFFF : 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_SGNEXT_I8_I32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u32[0] = (src >> 7) ? 0xFFFFFFFF : 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_SGNEXT_I8_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u64[0] = (src >> 7) ? 0xFFFFFFFFFFFFFFFFULL : 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_SGNEXT_I16_I32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U16 src = operand->u16[0];
+                operand->u32[0] = (src >> 15) ? 0xFFFFFFFF : 0;
+                operand->u16[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_SGNEXT_I16_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U16 src = operand->u16[0];
+                operand->u64[0] = (src >> 15) ? 0xFFFFFFFFFFFFFFFFULL : 0;
+                operand->u16[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_SGNEXT_I32_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U32 src = operand->u32[0];
+                operand->u64[0] = (src >> 31) ? 0xFFFFFFFFFFFFFFFFULL : 0;
+                operand->u32[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I8_I16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u16[0] = 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I8_I32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u32[0] = 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I8_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U8 src = operand->u8[0];
+                operand->u64[0] = 0;
+                operand->u8[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I16_I32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U16 src = operand->u16[0];
+                operand->u32[0] = 0;
+                operand->u16[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I16_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U16 src = operand->u16[0];
+                operand->u64[0] = 0;
+                operand->u16[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_ZEREXT_I32_I64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                U32 src = operand->u32[0];
+                operand->u64[0] = 0;
+                operand->u32[0] = src;
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U8_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->u8[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U16_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->u16[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U32_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->u32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U64_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->u64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S8_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->s8[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S16_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->s16[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S32_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->s32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S64_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->s64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_U8:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u8[0] = (U8)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_U16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u16[0] = (U16)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_U32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u32[0] = (U32)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_U64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u64[0] = (U64)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_S8:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s8[0] = (S8)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_S16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s16[0] = (S16)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_S32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s32[0] = (S32)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_S64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s64[0] = (S64)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U8_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->u8[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U16_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->u16[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U32_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->u32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_U64_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->u64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S8_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->s8[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S16_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->s16[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S32_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->s32[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_S64_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP64)(operand->s64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_U8:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u8[0] = (U8)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_U16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u16[0] = (U16)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_U32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u32[0] = (U32)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_U64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->u64[0] = (U64)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_S8:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s8[0] = (S8)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_S16:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s16[0] = (S16)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_S32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s32[0] = (S32)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_S64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->s64[0] = (S64)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP64_FP32:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp32[0] = (FP32)(operand->fp64[0]);
+
+                counter += 1;
+                break;
+            }
+
+            case INS_CONV_FP32_FP64:
+            {
+                Value* operand =
+                    &machine->stack.buffer[machine->stack.size - 1];
+
+                operand->fp64[0] = (FP32)(operand->fp32[0]);
+
+                counter += 1;
+                break;
+            }
+
             case INS_OR_I8:
             {
                 machine->stack.buffer[machine->stack.size - 2].u8[0] |=
