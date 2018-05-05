@@ -49,8 +49,8 @@ int main()
 {
     size_t errors = 0;
 
-    errors += Test__Machine_grow_stack();
-    errors += Test__INS_PUSH();
+    errors += !Test__Machine_grow_stack();
+    errors += !Test__INS_PUSH();
 
     return errors;
 }
