@@ -10,6 +10,3 @@ build_script:
     - cd build
     - cmake .. -G "NMake Makefiles"
     - nmake
-
-test_script:
-    - omega-test-machine

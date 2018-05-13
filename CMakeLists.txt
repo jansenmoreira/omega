@@ -8,6 +8,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NATVIS:${CMAKE_SOURCE_DIR
 
 find_package(PythonInterp REQUIRED)
 
+add_definitions(-DTEST)
+
 add_custom_command(
     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/UCD.py --ucd ${CMAKE_SOURCE_DIR}/scripts/ucd.all.flat.zip --output ${PROJECT_BINARY_DIR}/source
     DEPENDS scripts/UCD.py
@@ -86,10 +88,3 @@ add_executable(
 )
 
 target_link_libraries(omega-cli omega-utility omega-structures omega-machine)
-
-add_executable(
-    omega-test-machine
-    tests/Machine.c
-)
-
-target_link_libraries(omega-test-machine omega-utility omega-structures omega-machine)

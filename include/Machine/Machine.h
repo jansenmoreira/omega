@@ -34,10 +34,4 @@ Machine Machine_create();
 
 void Machine_destroy(Machine* self);
 
-void Machine_grow_stack(Machine* self, size_t size);
-
-void Machine_grow_local(Machine* self, size_t size);
-
-void Machine_grow_global(Machine* self, size_t size);
-
 #endif

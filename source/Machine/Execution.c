@@ -1,5 +1,31 @@
 #include <Machine/Execution.h>
 
+#define GROW(MACHINE, LOCATION, SIZE, TYPE)                             \
+    {                                                                   \
+        if (MACHINE->LOCATION.size + SIZE > MACHINE->LOCATION.capacity) \
+        {                                                               \
+            size_t capacity = (MACHINE->LOCATION.size + SIZE) << 1;     \
+            TYPE* buffer = (TYPE*)malloc(sizeof(TYPE) * capacity);      \
+                                                                        \
+            if (!buffer)                                                \
+            {                                                           \
+                Panic(Memory_Error);                                    \
+            }                                                           \
+                                                                        \
+            memcpy(buffer, MACHINE->LOCATION.buffer,                    \
+                   sizeof(TYPE) * MACHINE->LOCATION.size);              \
+                                                                        \
+            MACHINE->LOCATION.buffer = buffer;                          \
+            MACHINE->LOCATION.capacity = capacity;                      \
+        }                                                               \
+    }
+
+#define MACHINE_GROW_STACK(MACHINE, SIZE) GROW(MACHINE, stack, SIZE, Value)
+
+#define MACHINE_GROW_LOCAL(MACHINE, SIZE) GROW(MACHINE, local, SIZE, Value*)
+
+#define MACHINE_GROW_GLOBAL(MACHINE, SIZE) GROW(MACHINE, global, SIZE, PTR)
+
 void execute(Program* program, Machine* machine)
 {
     size_t counter = 0;
@@ -21,7 +47,7 @@ void execute(Program* program, Machine* machine)
                 size = (size & 0x7) ? (size | 0x7) + 1 : size;
 
                 Value* address = (Value*)malloc(size);
-                Machine_grow_local(machine, 1);
+                MACHINE_GROW_LOCAL(machine, 1);
                 machine->local.buffer[machine->local.size++] = address;
                 counter += 2;
                 break;
@@ -40,7 +66,7 @@ void execute(Program* program, Machine* machine)
                 size_t index = program[counter + 1].immediate.u64[0];
                 PTR address = machine->global.buffer[index];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u8[0] =
                     *(U8*)(address);
@@ -54,7 +80,7 @@ void execute(Program* program, Machine* machine)
                 size_t index = program[counter + 1].immediate.u64[0];
                 PTR address = machine->global.buffer[index];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u16[0] =
                     *(U16*)(address);
@@ -68,7 +94,7 @@ void execute(Program* program, Machine* machine)
                 size_t index = program[counter + 1].immediate.u64[0];
                 PTR address = machine->global.buffer[index];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u32[0] =
                     *(U32*)(address);
@@ -82,7 +108,7 @@ void execute(Program* program, Machine* machine)
                 size_t index = program[counter + 1].immediate.u64[0];
                 PTR address = machine->global.buffer[index];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u64[0] =
                     *(U64*)(address);
@@ -139,7 +165,7 @@ void execute(Program* program, Machine* machine)
             {
                 size_t index = program[counter + 1].immediate.u64[0];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].ptr[0] =
                     machine->global.buffer[index];
@@ -156,7 +182,7 @@ void execute(Program* program, Machine* machine)
                 size_t high = (index & 0xFFFFFFFFFFFFFFF8ULL) >> 3ULL;
                 size_t low = index & 0x0000000000000007ULL;
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u8[0] =
                     address[high].u8[low];
@@ -173,7 +199,7 @@ void execute(Program* program, Machine* machine)
                 size_t high = (index & 0xFFFFFFFFFFFFFFF8ULL) >> 3ULL;
                 size_t low = (index & 0x0000000000000006ULL) >> 1ULL;
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u16[0] =
                     address[high].u16[low];
@@ -190,7 +216,7 @@ void execute(Program* program, Machine* machine)
                 size_t high = (index & 0xFFFFFFFFFFFFFFF8ULL) >> 3ULL;
                 size_t low = (index & 0x0000000000000004ULL) >> 2ULL;
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u32[0] =
                     address[high].u32[low];
@@ -206,7 +232,7 @@ void execute(Program* program, Machine* machine)
 
                 size_t high = (index & 0xFFFFFFFFFFFFFFF8ULL) >> 3ULL;
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u64[0] =
                     address[high].u64[0];
@@ -281,7 +307,7 @@ void execute(Program* program, Machine* machine)
 
                 size_t high = (index & 0xFFFFFFFFFFFFFFF8ULL) >> 3ULL;
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].ptr[0] =
                     (PTR)(&address[high]);
@@ -294,7 +320,7 @@ void execute(Program* program, Machine* machine)
             {
                 size_t address = program[counter + 1].immediate.u64[0];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u8[0] =
                     *(U8*)(address);
@@ -307,7 +333,7 @@ void execute(Program* program, Machine* machine)
             {
                 size_t address = program[counter + 1].immediate.u64[0];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u16[0] =
                     *(U16*)(address);
@@ -320,7 +346,7 @@ void execute(Program* program, Machine* machine)
             {
                 size_t address = program[counter + 1].immediate.u64[0];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u32[0] =
                     *(U32*)(address);
@@ -333,7 +359,7 @@ void execute(Program* program, Machine* machine)
             {
                 size_t address = program[counter + 1].immediate.u64[0];
 
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u64[0] =
                     *(U64*)(address);
@@ -481,7 +507,7 @@ void execute(Program* program, Machine* machine)
 
             case INS_PUSH_8:
             {
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u8[0] =
                     program[counter + 1].immediate.u8[0];
@@ -491,7 +517,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_16:
             {
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u16[0] =
                     program[counter + 1].immediate.u16[0];
@@ -501,7 +527,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_32:
             {
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u32[0] =
                     program[counter + 1].immediate.u32[0];
@@ -511,7 +537,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_PUSH_64:
             {
-                Machine_grow_stack(machine, 1);
+                MACHINE_GROW_STACK(machine, 1);
 
                 machine->stack.buffer[machine->stack.size++].u64[0] =
                     program[counter + 1].immediate.u64[0];
@@ -2298,7 +2324,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_U8:
             {
-                U8 a = machine->stack.buffer[machine->stack.size - 2].u8[0];
+                U8 a = machine->stack.buffer[machine->stack.size - 1].u8[0];
                 U8 b = program[counter + 1].immediate.u8[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2308,7 +2334,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_U16:
             {
-                U16 a = machine->stack.buffer[machine->stack.size - 2].u16[0];
+                U16 a = machine->stack.buffer[machine->stack.size - 1].u16[0];
                 U16 b = program[counter + 1].immediate.u16[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2318,7 +2344,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_U32:
             {
-                U32 a = machine->stack.buffer[machine->stack.size - 2].u32[0];
+                U32 a = machine->stack.buffer[machine->stack.size - 1].u32[0];
                 U32 b = program[counter + 1].immediate.u32[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2328,7 +2354,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_U64:
             {
-                U64 a = machine->stack.buffer[machine->stack.size - 2].u64[0];
+                U64 a = machine->stack.buffer[machine->stack.size - 1].u64[0];
                 U64 b = program[counter + 1].immediate.u64[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2338,7 +2364,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_S8:
             {
-                S8 a = machine->stack.buffer[machine->stack.size - 2].s8[0];
+                S8 a = machine->stack.buffer[machine->stack.size - 1].s8[0];
                 S8 b = program[counter + 1].immediate.s8[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2348,7 +2374,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_S16:
             {
-                S16 a = machine->stack.buffer[machine->stack.size - 2].s16[0];
+                S16 a = machine->stack.buffer[machine->stack.size - 1].s16[0];
                 S16 b = program[counter + 1].immediate.s16[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2358,7 +2384,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_S32:
             {
-                S32 a = machine->stack.buffer[machine->stack.size - 2].s32[0];
+                S32 a = machine->stack.buffer[machine->stack.size - 1].s32[0];
                 S32 b = program[counter + 1].immediate.s32[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2368,7 +2394,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_S64:
             {
-                S64 a = machine->stack.buffer[machine->stack.size - 2].s64[0];
+                S64 a = machine->stack.buffer[machine->stack.size - 1].s64[0];
                 S64 b = program[counter + 1].immediate.s64[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2378,7 +2404,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_FP32:
             {
-                FP32 a = machine->stack.buffer[machine->stack.size - 2].fp32[0];
+                FP32 a = machine->stack.buffer[machine->stack.size - 1].fp32[0];
                 FP32 b = program[counter + 1].immediate.fp32[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
@@ -2388,7 +2414,7 @@ void execute(Program* program, Machine* machine)
             }
             case INS_CMPI_FP64:
             {
-                FP64 a = machine->stack.buffer[machine->stack.size - 2].fp64[0];
+                FP64 a = machine->stack.buffer[machine->stack.size - 1].fp64[0];
                 FP64 b = program[counter + 1].immediate.fp64[0];
 
                 machine->cmp = (a == b) ? 0 : (a < b) ? -1 : 1;
