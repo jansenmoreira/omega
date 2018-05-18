@@ -34,7 +34,7 @@ void execute(Program* program, Machine* machine)
     {
         switch (program[counter].instruction)
         {
-            case INS_HALT:
+            case INS_RETURN:
             {
                 step = False;
                 break;
@@ -549,6 +549,18 @@ void execute(Program* program, Machine* machine)
             case INS_POP:
             {
                 machine->stack.size -= 1;
+                counter += 1;
+                break;
+            }
+
+            case INS_DUP:
+            {
+                MACHINE_GROW_STACK(machine, 1);
+
+                machine->stack.buffer[machine->stack.size] =
+                    machine->stack.buffer[machine->stack.size - 1];
+
+                machine->stack.size += 1;
                 counter += 1;
                 break;
             }
@@ -2504,214 +2516,35 @@ void execute(Program* program, Machine* machine)
                 counter = program[counter + 1].immediate.u64[0];
                 break;
             }
-            /*
             case INS_NATIVE_CALL:
             {
+                PTR function_pointer = program[counter + 1].immediate.ptr[0];
+
                 U64 number_of_parameters =
-                    (program + counter + 3)->immediate.u64[0];
+                    program[counter + 2].immediate.u64[0];
 
-                if (machine->size + ((number_of_parameters + 1) * 2) >
-                    machine->capacity)
-                {
-                    U8* buffer =
-                        (U8*)malloc(sizeof(U8) * ((machine->size + 1) << 1));
+                Native_Call(
+                    function_pointer,
+                    *(Call_Type_And_Value*)(machine->stack.buffer +
+                                            machine->stack.size -
+                                            ((number_of_parameters + 1) * 2)),
+                    number_of_parameters,
+                    (Call_Type_And_Value*)(machine->stack.buffer +
+                                           machine->stack.size -
+                                           ((number_of_parameters)*2)));
 
-                    if (!buffer)
-                    {
-                        Panic(Memory_Error);
-                    }
-
-                    memcpy(buffer, machine->stack, machine->size);
-
-                    machine->stack = buffer;
-                }
-
-                void* function_pointer =
-                    (void*)(program[counter + 1].immediate.u64[0]);
-
-                U64 return_type = program[counter + 2].immediate.u32[0];
-                U64 return_size = program[counter + 2].imm_i32[1];
-
-                U8* ptr = machine->stack + machine->size;
-
-                size_t amount_to_shrink = 0;
-
-                for (size_t it = number_of_parameters; it > 0; it--)
-                {
-                    U64 param_type =
-                        (program + counter + it + 3)->immediate.u32[0];
-                    U64 param_size = (program + counter + it + 3)->imm_i32[1];
-
-                    Call_Type_And_Value* param =
-                        (Call_Type_And_Value*)(machine->stack + machine->size +
-                                               (it *
-                                                sizeof(Call_Type_And_Value)));
-
-                    ptr -= param_size;
-
-                    switch (param_type)
-                    {
-                        case Program_Type_I8:
-                        {
-                            param->type = Call_Type_I8;
-                            param->value.u8[0] = *(U8*)(ptr);
-                            break;
-                        }
-                        case Program_Type_I16:
-                        {
-                            param->type = Call_Type_I16;
-                            param->value.u16[0] = *(U16*)(ptr);
-                            break;
-                        }
-                        case Program_Type_I32:
-                        {
-                            param->type = Call_Type_I32;
-                            param->value.u32[0] = *(U32*)(ptr);
-                            break;
-                        }
-                        case Program_Type_I64:
-                        {
-                            param->type = Call_Type_I64;
-                            param->value.u64 = *(U64*)(ptr);
-                            break;
-                        }
-                        case Program_Type_FP32:
-                        {
-                            param->type = Call_Type_FP32;
-                            param->value.fp32[0] = *(FP32*)(ptr);
-                            break;
-                        }
-                        case Program_Type_FP64:
-                        {
-                            param->type = Call_Type_FP64;
-                            param->value.fp64 = *(FP64*)(ptr);
-                            break;
-                        }
-                        case Program_Type_Struct:
-                        {
-                            switch (param_size)
-                            {
-                                case 1:
-                                {
-                                    param->type = Call_Type_I8;
-                                    param->value.u8[0] = *(U8*)(ptr);
-                                    break;
-                                }
-                                case 2:
-                                {
-                                    param->type = Call_Type_I16;
-                                    param->value.u16[0] = *(U16*)(ptr);
-                                    break;
-                                }
-                                case 4:
-                                {
-                                    param->type = Call_Type_I32;
-                                    param->value.u32[0] = *(U32*)(ptr);
-                                    break;
-                                }
-                                case 8:
-                                {
-                                    param->type = Call_Type_I64;
-                                    param->value.u64 = *(U64*)(ptr);
-                                    break;
-                                }
-                                default:
-                                {
-                                    param->type = Call_Type_Struct;
-                                    param->value.ptr = ptr;
-                                    break;
-                                }
-                            }
-
-                            break;
-                        }
-                    }
-
-                    auto a = 1;
-                }
-
-                Call_Type_And_Value* ret =
-                    (Call_Type_And_Value*)(machine->stack + machine->size);
-
-                switch (return_type)
-                {
-                    case Program_Type_I8:
-                    {
-                        ret->type = Call_Type_I8;
-                        break;
-                    }
-                    case Program_Type_I16:
-                    {
-                        ret->type = Call_Type_I16;
-                        break;
-                    }
-                    case Program_Type_I32:
-                    {
-                        ret->type = Call_Type_I32;
-                        break;
-                    }
-                    case Program_Type_I64:
-                    {
-                        ret->type = Call_Type_I64;
-                        break;
-                    }
-                    case Program_Type_FP32:
-                    {
-                        ret->type = Call_Type_FP32;
-                        break;
-                    }
-                    case Program_Type_FP64:
-                    {
-                        ret->type = Call_Type_FP64;
-                        break;
-                    }
-                    case Program_Type_Struct:
-                    {
-                        switch (return_size)
-                        {
-                            case 1:
-                            {
-                                ret->type = Call_Type_I8;
-                                break;
-                            }
-                            case 2:
-                            {
-                                ret->type = Call_Type_I16;
-                                break;
-                            }
-                            case 4:
-                            {
-                                ret->type = Call_Type_I32;
-                                break;
-                            }
-                            case 8:
-                            {
-                                ret->type = Call_Type_I64;
-                                break;
-                            }
-                            default:
-                            {
-                                ret->type = Call_Type_Struct;
-                                break;
-                            }
-                        }
-
-                        break;
-                    }
-                }
-
-                ret->type = return_type;
-                ret->value.ptr = ptr;
-
-                Native_Call(function_pointer, *ret, number_of_parameters,
-                            ret + 1);
-
-                machine->size -=
-                    (size_t)((machine->stack + machine->size) - (ptr));
-                counter += 4 + number_of_parameters;
+                machine->stack.size -= (number_of_parameters + 1) * 2;
+                counter += 3;
                 break;
             }
-            */
+            case INS_CALL:
+            {
+                Program* callee = program[counter + 1].immediate.ptr[0];
+                execute(callee, machine);
+
+                counter += 2;
+                break;
+            }
             default:
             {
                 assert(False && "Invalid Instruction");

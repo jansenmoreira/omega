@@ -6,7 +6,7 @@
 
 typedef enum Instructions
 {
-    INS_HALT,
+    INS_RETURN,
     INS_ALLOC,
     INS_FREE,
 
@@ -62,6 +62,8 @@ typedef enum Instructions
     INS_PUSH_64,
 
     INS_POP,
+
+    INS_DUP,
 
     INS_INC_I8,
     INS_INC_I16,

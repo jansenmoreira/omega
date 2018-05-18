@@ -215,7 +215,6 @@ $MOV_RETURN_TO_POINTER_FP32:
 
 $MOV_RETURN_TO_POINTER_FP64:
     movq        QWORD PTR [r13], xmm0
-    jmp         $END
 
 $END:
     pop         r15

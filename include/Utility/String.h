@@ -24,4 +24,6 @@ void String_free();
 
 String String_new(const char* ptr, size_t size);
 
+String String_fmt(const char* format, ...);
+
 #endif

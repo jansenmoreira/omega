@@ -289,3 +289,20 @@ String String_new(const char* ptr, size_t size)
         j += 1;
     }
 }
+
+String String_fmt(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    int size = vsnprintf(NULL, 0, format, args);
+
+    char* buffer = (char*)malloc(sizeof(char) * (size + 1));
+    vsnprintf(buffer, size + 1, format, args);
+
+    String string = String_new(buffer, size);
+
+    va_end(args);
+
+    return string;
+}

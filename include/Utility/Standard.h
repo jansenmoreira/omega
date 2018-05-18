@@ -23,7 +23,7 @@ typedef int64_t S64;
 typedef float FP32;
 typedef double FP64;
 
-typedef U8* PTR;
+typedef void* PTR;
 
 typedef enum Boolean
 {
