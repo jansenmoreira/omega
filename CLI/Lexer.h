@@ -6,9 +6,15 @@
 #include <Support/String.h>
 #include <Support/Unicode.h>
 
-enum Tag
+typedef enum Tag
 {
     Tag_END = -1,
+
+    Tag_MOD = '%',
+    Tag_TIMES = '*',
+    Tag_PLUS = '+',
+    Tag_MINUS = '-',
+    Tag_DIV = '/',
 
     Tag_ID = 256,
 
@@ -45,11 +51,11 @@ enum Tag
     Tag_S_SIZE,
 
     Tag_UNKNOW,
-};
+} Tag;
 
 typedef struct Token
 {
-    int tag;
+    Tag tag;
     String lexeme;
     size_t begin;
     size_t end;

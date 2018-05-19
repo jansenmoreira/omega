@@ -57,6 +57,9 @@
     <ClCompile Include="Execution.c" />
     <ClCompile Include="Machine.c" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\omega.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

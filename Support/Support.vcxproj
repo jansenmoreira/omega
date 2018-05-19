@@ -22,6 +22,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -33,6 +34,9 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(Platform)_$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)build\$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -74,17 +78,23 @@
     <ClCompile Include="Unicode.c" />
     <ClCompile Include="$(OutDir)UCD.c" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Native_Call.asm" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="A:\Desktop\github.com\jansenmoreira\omega\build\teste\CMakeFiles\78e529bebd04753e3930e70985219d43\UCD.c.rule">
+  <ItemDefinitionGroup>
+    <CustomBuildStep>
       <Message>Generating $(ProjectName)/UCD.c</Message>
       <Command>python.exe $(ProjectDir)UCD.py --ucd $(ProjectDir)ucd.all.flat.zip --output $(OutDir)</Command>
       <Outputs>$(OutDir)UCD.c</Outputs>
-    </CustomBuild>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Natvis Include="..\omega.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="Native_Call.asm" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

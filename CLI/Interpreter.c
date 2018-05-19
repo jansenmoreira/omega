@@ -118,7 +118,7 @@ void Interpreter_push_token(Interpreter* self, Token token)
 Expression* Interpreter_parse_expression0(Interpreter* self)
 {
     return Interpreter_parse_expression0_tail(
-        self, Interpreter_parse_expression2(self));
+        self, Interpreter_parse_expression1(self));
 }
 
 Expression* Interpreter_parse_expression0_tail(Interpreter* self,
@@ -135,7 +135,7 @@ Expression* Interpreter_parse_expression0_tail(Interpreter* self,
     {
         case '=':
         {
-            Expression* rhs = Interpreter_parse_expression2(self);
+            Expression* rhs = Interpreter_parse_expression0(self);
 
             if (!rhs)
             {
@@ -146,6 +146,69 @@ Expression* Interpreter_parse_expression0_tail(Interpreter* self,
             assign->lhs = lhs;
             assign->rhs = rhs;
             return (Expression*)assign;
+        }
+        default:
+        {
+            Interpreter_push_token(self, self->parser.token);
+            return lhs;
+        }
+    }
+}
+
+Expression* Interpreter_parse_expression1(Interpreter* self)
+{
+    return Interpreter_parse_expression1_tail(
+        self, Interpreter_parse_expression2(self));
+}
+
+Expression* Interpreter_parse_expression1_tail(Interpreter* self,
+                                               Expression* lhs)
+{
+    if (!lhs)
+    {
+        return NULL;
+    }
+
+    Interpreter_next_token(self);
+
+    switch (self->parser.token.tag)
+    {
+        case ',':
+        {
+            Expression_Tuple* tuple;
+
+            if (lhs->expression_id == EXPRESSION_TUPLE)
+            {
+                tuple = (Expression_Tuple*)(lhs);
+
+                Expression* rhs = Interpreter_parse_expression3(self);
+
+                if (!rhs)
+                {
+                    Expression_destroy(lhs);
+
+                    return NULL;
+                }
+
+                Stack_push(&tuple->fields, &rhs);
+            }
+            else
+            {
+                Expression* rhs = Interpreter_parse_expression3(self);
+
+                if (!rhs)
+                {
+                    Expression_destroy(lhs);
+
+                    return NULL;
+                }
+
+                tuple = Expression_Tuple_create();
+                Stack_push(&tuple->fields, &lhs);
+                Stack_push(&tuple->fields, &rhs);
+            }
+
+            return Interpreter_parse_expression1_tail(self, (Expression*)tuple);
         }
         default:
         {
@@ -629,6 +692,14 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
             Expression_Integer_Literal* lit =
                 Expression_Integer_Literal_create();
             lit->value = self->parser.token.lexeme;
+            return (Expression*)lit;
+        }
+        case Tag_LITERAL_CHAR:
+        {
+            Expression_Integer_Literal* lit =
+                Expression_Integer_Literal_create();
+            lit->value = String_fmt("%" PRIu8 "",
+                                    String_begin(self->parser.token.lexeme)[0]);
             return (Expression*)lit;
         }
         case Tag_LITERAL_REAL:

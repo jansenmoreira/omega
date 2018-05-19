@@ -1,36 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-    <Type Name="String_Manager">
-        <DisplayString>Strings :: {set_size}</DisplayString>
+  <Type Name="String_Manager">
+    <DisplayString>Strings :: {set_size}</DisplayString>
+    <Expand>
+      <Synthetic Name="[Buffer]">
         <Expand>
-            <Synthetic Name="[Buffer]">
-                <Expand>
-                    <ArrayItems>
-                        <Size>buffer_size</Size>
-                        <ValuePointer>buffer</ValuePointer>
-                    </ArrayItems>
-                </Expand>
-            </Synthetic>
-            <Synthetic Name="[Table]">
-                <Expand>
-                    <ArrayItems>
-                        <Size>set_capacity</Size>
-                        <ValuePointer>set</ValuePointer>
-                    </ArrayItems>
-                </Expand>
-            </Synthetic>
+          <ArrayItems>
+            <Size>buffer_size</Size>
+            <ValuePointer>buffer</ValuePointer>
+          </ArrayItems>
         </Expand>
-    </Type>
+      </Synthetic>
+      <Synthetic Name="[Table]">
+        <Expand>
+          <ArrayItems>
+            <Size>set_capacity</Size>
+            <ValuePointer>set</ValuePointer>
+          </ArrayItems>
+        </Expand>
+      </Synthetic>
+    </Expand>
+  </Type>
 
-    <Type Name="String">
-        <DisplayString>
-            {manager.buffer + index, s8}
-        </DisplayString>
-        <Expand>
-            <Item Name="[Manager]">manager</Item>
-            <Item Name="[Hash]">hash,X</Item>
-        </Expand>
-    </Type>
+  <Type Name="String">
+    <DisplayString>
+      {manager.buffer + index, s8}
+    </DisplayString>
+    <Expand>
+      <Item Name="[Manager]">manager</Item>
+      <Item Name="[Hash]">hash,X</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Expression">
+
+    <DisplayString Condition="expression_id == EXPRESSION_ASSIGN &amp;&amp; ((Expression_Assign*)(this))->lhs &amp;&amp; ((Expression_Assign*)(this))->rhs">
+      ({ *((Expression_Assign*)(this))->lhs } = { *((Expression_Assign*)(this))->rhs })
+    </DisplayString>
+
+    <DisplayString Condition="expression_id == EXPRESSION_BINARY &amp;&amp; ((Expression_Binary*)(this))->lhs &amp;&amp; ((Expression_Binary*)(this))->rhs">
+      ({ *((Expression_Binary*)(this))->lhs } { ((Expression_Binary*)(this))->op } { *((Expression_Binary*)(this))->rhs })
+    </DisplayString>
+
+    <DisplayString Condition="expression_id == EXPRESSION_UNARY &amp;&amp; ((Expression_Unary*)(this))->expression">
+      ({ ((Expression_Unary*)(this))->op } { *((Expression_Unary*)(this))->expression })
+    </DisplayString>
+
+    <DisplayString Condition="expression_id == EXPRESSION_TUPLE">
+      Tuple
+    </DisplayString>
+
+    <DisplayString Condition="expression_id == EXPRESSION_INTEGER_LITERAL || expression_id == EXPRESSION_REAL_LITERAL">
+      ({ ((Expression_Integer_Literal*)(this))->value, s8b })
+    </DisplayString>
+
+    <DisplayString Condition="expression_id == EXPRESSION_STRING_LITERAL">
+      ({ ((Expression_String_Literal*)(this))->value })
+    </DisplayString>
+    
+    <DisplayString Condition="expression_id == EXPRESSION_REFERENCE">
+      ({ ((Expression_Reference*)(this))->id, s8b })
+    </DisplayString>
+    
+    <Expand HideRawView="true">
+      
+      <Item Name="[LHS]" Condition="expression_id == EXPRESSION_ASSIGN &amp;&amp; ((Expression_Assign*)(this))->lhs">
+        *((Expression_Assign*)(this))->lhs
+      </Item>
+      <Item Name="[RHS]" Condition="expression_id == EXPRESSION_ASSIGN &amp;&amp; ((Expression_Assign*)(this))->lhs">
+        *((Expression_Assign*)(this))->rhs
+      </Item>
+      
+      <Item Name="[Operator]" Condition="expression_id == EXPRESSION_BINARY">
+        ((Expression_Binary*)(this))->op
+      </Item>
+      <Item Name="[LHS]" Condition="expression_id == EXPRESSION_BINARY &amp;&amp; ((Expression_Binary*)(this))->lhs">
+        *((Expression_Binary*)(this))->lhs
+      </Item>
+      <Item Name="[RHS]" Condition="expression_id == EXPRESSION_BINARY &amp;&amp; ((Expression_Binary*)(this))->lhs">
+        *((Expression_Binary*)(this))->rhs
+      </Item>
+
+      <Item Name="[Operator]" Condition="expression_id == EXPRESSION_UNARY">
+        ((Expression_Unary*)(this))->op
+      </Item>
+      <Item Name="[Expresion]" Condition="expression_id == EXPRESSION_UNARY &amp;&amp; ((Expression_Unary*)(this))->expression">
+        *((Expression_Unary*)(this))->expression
+      </Item>
+
+      <IndexListItems Condition="expression_id == EXPRESSION_TUPLE">
+        <Size>((Expression_Tuple*)(this))->fields.size</Size>
+        <ValueNode>*((Expression**)(((Expression_Tuple*)(this))->fields.buffer))[$i]</ValueNode>
+      </IndexListItems>
+
+    </Expand>
+  </Type>
 
 </AutoVisualizer>

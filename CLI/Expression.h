@@ -1,6 +1,7 @@
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
+#include <CLI/Lexer.h>
 #include <CLI/Types.h>
 #include <Support/Stack.h>
 #include <Support/String.h>
@@ -62,7 +63,7 @@ typedef struct Expression_Binary
 {
     Expression_ID expression_id;
 
-    int op;
+    Tag op;
     Expression* lhs;
     Expression* rhs;
 } Expression_Binary;
@@ -71,7 +72,7 @@ typedef struct Expression_Unary
 {
     Expression_ID expression_id;
 
-    int op;
+    Tag op;
     Expression* expression;
 } Expression_Unary;
 
