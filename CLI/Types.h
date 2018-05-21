@@ -12,13 +12,19 @@ typedef enum Type_ID
     TYPE_POINTER,
     TYPE_TUPLE,
     TYPE_STRUCT,
-    TYPE_FUNCTION
+    TYPE_FUNCTION,
+    TYPE_TYPE,
 } Type_ID;
 
 typedef struct Type
 {
     Type_ID type_id;
 } Type;
+
+typedef struct Type_Type
+{
+    Type_ID type_id;
+} Type_Type;
 
 typedef struct Type_Float
 {
@@ -32,7 +38,7 @@ typedef struct Type_Integer
     Type_ID type_id;
 
     size_t size;
-    int is_signed;
+    Boolean is_signed;
 } Type_Integer;
 
 typedef struct Type_Array
@@ -61,8 +67,9 @@ typedef struct Type_Struct
 {
     Type_ID type_id;
 
-    Stack fields;
-    Stack ids;
+    String id;
+    Stack field_types;
+    Stack field_ids;
 } Type_Struct;
 
 typedef struct Type_Function

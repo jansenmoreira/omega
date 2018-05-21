@@ -42,12 +42,14 @@ typedef struct Expression_Size
     Expression_ID expression_id;
 
     Type* type;
+    Expression* expression;
 } Expression_Size;
 
 typedef struct Expression_Type
 {
     Expression_ID expression_id;
 
+    Type_Type* type;
     Expression* expression;
 } Expression_Type;
 

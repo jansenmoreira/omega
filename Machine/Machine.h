@@ -34,4 +34,6 @@ Machine Machine_create();
 
 void Machine_destroy(Machine* self);
 
+PTR Machine_alloc_global(Machine* self, size_t size);
+
 #endif

@@ -1,32 +1,90 @@
 #include <CLI/Types.h>
 
-Type_Integer* Type_Integer_create(size_t size, int is_signed)
+Type_Integer type_u8 = {
+    .type_id = TYPE_INTEGER,
+    .size = 1,
+    .is_signed = 0,
+};
+
+Type_Integer type_u16 = {
+    .type_id = TYPE_INTEGER,
+    .size = 2,
+    .is_signed = 0,
+};
+
+Type_Integer type_u32 = {
+    .type_id = TYPE_INTEGER,
+    .size = 4,
+    .is_signed = 0,
+};
+
+Type_Integer type_u64 = {
+    .type_id = TYPE_INTEGER,
+    .size = 8,
+    .is_signed = 0,
+};
+
+Type_Integer type_s8 = {
+    .type_id = TYPE_INTEGER,
+    .size = 1,
+    .is_signed = 1,
+};
+
+Type_Integer type_s16 = {
+    .type_id = TYPE_INTEGER,
+    .size = 2,
+    .is_signed = 1,
+};
+
+Type_Integer type_s32 = {
+    .type_id = TYPE_INTEGER,
+    .size = 4,
+    .is_signed = 1,
+};
+
+Type_Integer type_s64 = {
+    .type_id = TYPE_INTEGER,
+    .size = 8,
+    .is_signed = 1,
+};
+
+Type_Float type_fp32 = {
+    .type_id = TYPE_FLOAT,
+    .size = 4,
+};
+
+Type_Float type_fp64 = {
+    .type_id = TYPE_FLOAT,
+    .size = 8,
+};
+
+Type_Type type_type = {
+    .type_id = TYPE_TYPE,
+};
+
+Type_Type* Type_Type_create(Type* type)
 {
-    Type_Integer* self = (Type_Integer*)malloc(sizeof(Type_Integer));
+    return &type_type;
+}
 
-    if (!self)
+Type_Integer* Type_Integer_create(size_t size, Boolean is_signed)
+{
+    switch (size)
     {
-        Panic(Memory_Error);
+        case 1:
+            return (is_signed) ? &type_s8 : &type_u8;
+        case 2:
+            return (is_signed) ? &type_s16 : &type_u16;
+        case 4:
+            return (is_signed) ? &type_s32 : &type_u32;
+        case 8:
+            return (is_signed) ? &type_s64 : &type_u64;
     }
-
-    self->type_id = TYPE_INTEGER;
-    self->size = size;
-    self->is_signed = is_signed;
-    return self;
 }
 
 Type_Float* Type_Float_create(size_t size)
 {
-    Type_Float* self = (Type_Float*)malloc(sizeof(Type_Float));
-
-    if (!self)
-    {
-        Panic(Memory_Error);
-    }
-
-    self->type_id = TYPE_FLOAT;
-    self->size = size;
-    return self;
+    return (size == 4) ? &type_fp32 : &type_fp64;
 }
 
 Type_Array* Type_Array_create(Type* type, size_t size)
@@ -72,7 +130,7 @@ Type_Tuple* Type_Tuple_create()
     return self;
 }
 
-Type_Struct* Type_Struct_create()
+Type_Struct* Type_Struct_create(String id)
 {
     Type_Struct* self = (Type_Struct*)malloc(sizeof(Type_Struct));
 
@@ -82,8 +140,9 @@ Type_Struct* Type_Struct_create()
     }
 
     self->type_id = TYPE_STRUCT;
-    self->fields = Stack_create(sizeof(Type*));
-    self->ids = Stack_create(sizeof(String));
+    self->id = id;
+    self->field_types = Stack_create(sizeof(Type*));
+    self->field_ids = Stack_create(sizeof(String));
     return self;
 }
 
@@ -99,16 +158,6 @@ Type_Function* Type_Function_create()
     self->type_id = TYPE_FUNCTION;
     self->params = Stack_create(sizeof(Type*));
     return self;
-}
-
-void Type_Integer_destroy(Type_Integer* self)
-{
-    free(self);
-}
-
-void Type_Float_destroy(Type_Float* self)
-{
-    free(self);
 }
 
 void Type_Array_destroy(Type_Array* self)
@@ -136,13 +185,13 @@ void Type_Tuple_destroy(Type_Tuple* self)
 
 void Type_Struct_destroy(Type_Struct* self)
 {
-    for (size_t i = 0; i < self->fields.size; i++)
+    for (size_t i = 0; i < self->field_types.size; i++)
     {
-        Type_destroy(*(Type**)Stack_get(&self->fields, i));
+        Type_destroy(*(Type**)Stack_get(&self->field_types, i));
     }
 
-    Stack_destroy(&self->fields);
-    Stack_destroy(&self->ids);
+    Stack_destroy(&self->field_types);
+    Stack_destroy(&self->field_ids);
     free(self);
 }
 
@@ -161,16 +210,6 @@ void Type_destroy(Type* type)
 {
     switch (type->type_id)
     {
-        case TYPE_INTEGER:
-        {
-            Type_Integer_destroy((Type_Integer*)type);
-            break;
-        }
-        case TYPE_FLOAT:
-        {
-            Type_Float_destroy((Type_Float*)type);
-            break;
-        }
         case TYPE_ARRAY:
         {
             Type_Array_destroy((Type_Array*)type);
@@ -203,15 +242,11 @@ Type* Type_Copy(Type* type)
 {
     switch (type->type_id)
     {
+        case TYPE_TYPE:
         case TYPE_INTEGER:
-        {
-            Type_Integer* casted = (Type_Integer*)type;
-            return (Type*)Type_Integer_create(casted->size, casted->is_signed);
-        }
         case TYPE_FLOAT:
         {
-            Type_Float* casted = (Type_Float*)type;
-            return (Type*)Type_Float_create(casted->size);
+            return type;
         }
         case TYPE_ARRAY:
         {
@@ -240,17 +275,17 @@ Type* Type_Copy(Type* type)
         case TYPE_STRUCT:
         {
             Type_Struct* casted = (Type_Struct*)type;
-            Type_Struct* copy = Type_Struct_create();
+            Type_Struct* copy = Type_Struct_create(casted->id);
 
-            for (size_t i = 1; i < casted->fields.size; i++)
+            for (size_t i = 1; i < casted->field_types.size; i++)
             {
                 Type* field_type =
-                    Type_Copy(*(Type**)Stack_get(&casted->fields, i));
+                    Type_Copy(*(Type**)Stack_get(&casted->field_types, i));
 
-                String field_name = *(String*)Stack_get(&casted->ids, i);
+                String field_name = *(String*)Stack_get(&casted->field_ids, i);
 
-                Stack_push(&copy->fields, &field_type);
-                Stack_push(&copy->ids, &field_name);
+                Stack_push(&copy->field_types, &field_type);
+                Stack_push(&copy->field_ids, &field_name);
             }
 
             return (Type*)copy;
@@ -289,6 +324,10 @@ size_t Type_size(Type* type)
             Type_Float* casted = (Type_Float*)type;
             return casted->size;
         }
+        case TYPE_TYPE:
+        {
+            return 8;
+        }
         case TYPE_ARRAY:
         {
             Type_Array* casted = (Type_Array*)type;
@@ -317,9 +356,9 @@ size_t Type_size(Type* type)
 
             size_t size = 0;
 
-            for (size_t i = 1; i < casted->fields.size; i++)
+            for (size_t i = 1; i < casted->field_types.size; i++)
             {
-                size += Type_size(*(Type**)Stack_get(&casted->fields, i));
+                size += Type_size(*(Type**)Stack_get(&casted->field_types, i));
             }
 
             return size;
@@ -360,6 +399,10 @@ Boolean Type_equal(Type* a, Type* b)
             Type_Float* ac = (Type_Float*)a;
             Type_Float* bc = (Type_Float*)b;
             return ac->size == bc->size;
+        }
+        case TYPE_TYPE:
+        {
+            return b->type_id == TYPE_TYPE;
         }
         case TYPE_ARRAY:
         {
@@ -419,17 +462,17 @@ Boolean Type_equal(Type* a, Type* b)
             Type_Struct* ac = (Type_Struct*)a;
             Type_Struct* bc = (Type_Struct*)b;
 
-            if (ac->fields.size != bc->fields.size)
+            if (ac->field_types.size != bc->field_types.size)
             {
                 return False;
             }
 
-            for (size_t i = 0; i < ac->fields.size; i++)
+            for (size_t i = 0; i < ac->field_types.size; i++)
             {
-                if (!Type_equal(*(Type**)Stack_get(&ac->fields, i),
-                                *(Type**)Stack_get(&bc->fields, i)) ||
-                    !String_equal(*(String*)Stack_get(&ac->ids, i),
-                                  *(String*)Stack_get(&bc->ids, i)))
+                if (!Type_equal(*(Type**)Stack_get(&ac->field_types, i),
+                                *(Type**)Stack_get(&bc->field_types, i)) ||
+                    !String_equal(*(String*)Stack_get(&ac->field_ids, i),
+                                  *(String*)Stack_get(&bc->field_ids, i)))
                 {
                     return False;
                 }
@@ -515,6 +558,11 @@ void Type_print(Type* type)
             Print("%s", casted->size == 4 ? "fp32" : "fp64");
             break;
         }
+        case TYPE_TYPE:
+        {
+            Print("Type");
+            break;
+        }
         case TYPE_ARRAY:
         {
             Type_Array* casted = (Type_Array*)type;
@@ -553,12 +601,12 @@ void Type_print(Type* type)
 
             Print("{");
 
-            Type_print(*(Type**)Stack_get(&casted->fields, 0));
+            Type_print(*(Type**)Stack_get(&casted->field_types, 0));
 
-            for (size_t i = 1; i < casted->fields.size; i++)
+            for (size_t i = 1; i < casted->field_types.size; i++)
             {
                 Print(", ");
-                Type_print(*(Type**)Stack_get(&casted->fields, i));
+                Type_print(*(Type**)Stack_get(&casted->field_types, i));
             }
 
             Print("}");
@@ -676,6 +724,13 @@ void Type_print_value(Type* type, void* value)
 
             break;
         }
+        case TYPE_TYPE:
+        {
+            Type* type = (Type*)value;
+            Print("Type => ");
+            Type_print(type);
+            break;
+        }
         case TYPE_ARRAY:
         {
             Type_Array* casted = (Type_Array*)type;
@@ -722,12 +777,12 @@ void Type_print_value(Type* type, void* value)
 
             Print("{ ");
 
-            for (size_t i = 0; i < casted->fields.size; i++)
+            for (size_t i = 0; i < casted->field_types.size; i++)
             {
                 Print("%s : ",
-                      String_begin(*(String*)Stack_get(&casted->ids, i)));
+                      String_begin(*(String*)Stack_get(&casted->field_ids, i)));
 
-                Type* field_type = *(Type**)Stack_get(&casted->fields, i);
+                Type* field_type = *(Type**)Stack_get(&casted->field_types, i);
 
                 Type_print_value(field_type, value);
 
