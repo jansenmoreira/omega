@@ -33,6 +33,32 @@
     </Expand>
   </Type>
 
+    <Type Name="Type">
+
+        <DisplayString Condition="type_id == TYPE_POINTER &amp;&amp; ((Type_Pointer*)(this))->type">
+            *{ *((Type_Pointer*)(this))->type }
+        </DisplayString>
+
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 1 &amp;&amp; ((Type_Integer*)(this))->is_signed == 0">U8</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 2 &amp;&amp; ((Type_Integer*)(this))->is_signed == 0">U16</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 4 &amp;&amp; ((Type_Integer*)(this))->is_signed == 0">U32</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 8 &amp;&amp; ((Type_Integer*)(this))->is_signed == 0">U64</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 1 &amp;&amp; ((Type_Integer*)(this))->is_signed == 1">S8</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 2 &amp;&amp; ((Type_Integer*)(this))->is_signed == 1">S16</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 4 &amp;&amp; ((Type_Integer*)(this))->is_signed == 1">S32</DisplayString>
+        <DisplayString Condition="type_id == TYPE_INTEGER &amp;&amp; ((Type_Integer*)(this))->size == 8 &amp;&amp; ((Type_Integer*)(this))->is_signed == 1">S64</DisplayString>
+        <DisplayString Condition="type_id == TYPE_FLOAT &amp;&amp; ((Type_Float*)(this))->size == 4">FP32</DisplayString>
+        <DisplayString Condition="type_id == TYPE_FLOAT &amp;&amp; ((Type_Float*)(this))->size == 8">FP64</DisplayString>
+
+        <Expand HideRawView="true">
+
+            <Item Name="[type]" Condition="type_id == TYPE_POINTER &amp;&amp; ((Type_Pointer*)(this))->type">
+                *((Type_Pointer*)(this))->type
+            </Item>
+
+        </Expand>
+    </Type>
+
   <Type Name="Expression">
 
     <DisplayString Condition="expression_id == EXPRESSION_ASSIGN &amp;&amp; ((Expression_Assign*)(this))->lhs &amp;&amp; ((Expression_Assign*)(this))->rhs">

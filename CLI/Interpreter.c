@@ -6,11 +6,13 @@ typedef struct Symbol
 {
     void* value;
     Type* type;
+    Boolean is_const;
+    Boolean has_initialized;
 } Symbol;
 
 typedef struct Scope
 {
-    Scope* parent;
+    struct Scope* parent;
     Map symbol_table;
 } Scope;
 
@@ -32,6 +34,60 @@ typedef struct Interpreter
 
     Machine machine;
 } Interpreter;
+
+String u8_type_name;
+String u16_type_name;
+String u32_type_name;
+String u64_type_name;
+String s8_type_name;
+String s16_type_name;
+String s32_type_name;
+String s64_type_name;
+String fp32_type_name;
+String fp64_type_name;
+String type_type_name;
+
+Expression* parse_expression0(Interpreter* self);
+Expression* parse_expression0_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression1(Interpreter* self);
+Expression* parse_expression1_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression2(Interpreter* self);
+Expression* parse_expression2_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression3(Interpreter* self);
+Expression* parse_expression3_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression4(Interpreter* self);
+Expression* parse_expression4_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression5(Interpreter* self);
+Expression* parse_expression5_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression6(Interpreter* self);
+Expression* parse_expression6_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression7(Interpreter* self);
+Expression* parse_expression7_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression8(Interpreter* self);
+Expression* parse_expression8_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression9(Interpreter* self);
+Expression* parse_expression9_tail(Interpreter* self, Expression* lhs);
+
+Expression* parse_expression_prefix(Interpreter* self);
+Expression* parse_expression_root(Interpreter* self);
+
+void Interpreter_push_scope(Interpreter* self);
+void Interpreter_pop_scope(Interpreter* self);
+Symbol* Interpreter_get_symbol(Interpreter* self, String id);
+void Interpreter_set_local_symbol(Interpreter* self, String id, Symbol symbol);
+void Interpreter_set_global_symbol(Interpreter* self, String id, Symbol symbol);
+
+void Interpreter_next_token(Interpreter* self);
+void Interpreter_push_token(Interpreter* self, Token token);
 
 void Interpreter_push_scope(Interpreter* self)
 {
@@ -85,98 +141,60 @@ void Interpreter_set_global_symbol(Interpreter* self, String id, Symbol symbol)
     Map_set(&self->scopes.global->symbol_table, id, &symbol);
 }
 
-void Interpreter_next_token(Interpreter* self);
-void Interpreter_push_token(Interpreter* self, Token token);
-
-String u8_type_name;
-String u16_type_name;
-String u32_type_name;
-String u64_type_name;
-String s8_type_name;
-String s16_type_name;
-String s32_type_name;
-String s64_type_name;
-String fp32_type_name;
-String fp64_type_name;
-String type_type_name;
-
-Type* u8_type;
-Type* u16_type;
-Type* u32_type;
-Type* u64_type;
-Type* s8_type;
-Type* s16_type;
-Type* s32_type;
-Type* s64_type;
-Type* fp32_type;
-Type* fp64_type;
-Type* type_type;
-
 void Interpreter_loop()
 {
-    u8_type_name = String_new("u8", 2);
-    u16_type_name = String_new("u16", 3);
-    u32_type_name = String_new("u32", 3);
-    u64_type_name = String_new("u64", 3);
-    s8_type_name = String_new("s8", 2);
-    s16_type_name = String_new("s16", 3);
-    s32_type_name = String_new("s32", 3);
-    s64_type_name = String_new("s64", 3);
-    fp32_type_name = String_new("fp32", 4);
-    fp64_type_name = String_new("fp64", 4);
-    type_type_name = String_new("type", 4);
-
-    u8_type = Type_Integer_create(1, 0);
-    u16_type = Type_Integer_create(2, 0);
-    u32_type = Type_Integer_create(4, 0);
-    u64_type = Type_Integer_create(8, 0);
-    s8_type = Type_Integer_create(1, 1);
-    s16_type = Type_Integer_create(2, 1);
-    s32_type = Type_Integer_create(4, 1);
-    s64_type = Type_Integer_create(8, 1);
-    fp32_type = Type_Float_create(4);
-    fp64_type = Type_Float_create(8);
-    type_type = Type_Type_create();
+    u8_type_name = String_new("U8", 2);
+    u16_type_name = String_new("U16", 3);
+    u32_type_name = String_new("U32", 3);
+    u64_type_name = String_new("U64", 3);
+    s8_type_name = String_new("S8", 2);
+    s16_type_name = String_new("S16", 3);
+    s32_type_name = String_new("S32", 3);
+    s64_type_name = String_new("S64", 3);
+    fp32_type_name = String_new("FP32", 4);
+    fp64_type_name = String_new("FP64", 4);
+    type_type_name = String_new("Type", 4);
 
     Interpreter self;
     self.machine = Machine_create();
     self.parser.queue = Stack_create(sizeof(Token));
 
+    self.scopes.local = NULL;
     Interpreter_push_scope(&self);
     self.scopes.global = self.scopes.local;
 
     Interpreter_set_global_symbol(&self, u8_type_name,
-                                  (Symbol){u8_type, type_type});
+                                  (Symbol){type_u8, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, u16_type_name,
-                                  (Symbol){u16_type, type_type});
+                                  (Symbol){type_u16, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, u32_type_name,
-                                  (Symbol){u32_type, type_type});
+                                  (Symbol){type_u32, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, u64_type_name,
-                                  (Symbol){u64_type, type_type});
+                                  (Symbol){type_u64, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, s8_type_name,
-                                  (Symbol){s8_type, type_type});
+                                  (Symbol){type_s8, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, s16_type_name,
-                                  (Symbol){s16_type, type_type});
+                                  (Symbol){type_s16, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, s32_type_name,
-                                  (Symbol){s32_type, type_type});
+                                  (Symbol){type_s32, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, s64_type_name,
-                                  (Symbol){s64_type, type_type});
+                                  (Symbol){type_s64, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, fp32_type_name,
-                                  (Symbol){fp32_type, type_type});
+                                  (Symbol){type_fp32, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, fp64_type_name,
-                                  (Symbol){fp64_type, type_type});
+                                  (Symbol){type_fp64, type_type, True, True});
 
     Interpreter_set_global_symbol(&self, type_type_name,
-                                  (Symbol){type_type, type_type});
+                                  (Symbol){type_type, type_type, True, True});
 
     Lexer_init();
 
@@ -192,7 +210,7 @@ void Interpreter_loop()
         self.parser.lexer =
             Lexer_create(line, String_fmt("omega:%" PRIu64 "", i));
 
-        Expression* expression = Interpreter_parse_expression0(&self);
+        Expression* expression = parse_expression0(&self);
 
         free(line);
     }
@@ -224,253 +242,12 @@ void Interpreter_push_token(Interpreter* self, Token token)
     Stack_push(&self->parser.queue, &token);
 }
 
-/*
-
-Type* Interpreter_parse_type(Interpreter* self);
-
-Expression* Interpreter_parse_expression0(Interpreter* self);
-Expression* Interpreter_parse_expression0_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression1(Interpreter* self);
-Expression* Interpreter_parse_expression1_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression2(Interpreter* self);
-Expression* Interpreter_parse_expression2_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression3(Interpreter* self);
-Expression* Interpreter_parse_expression3_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression4(Interpreter* self);
-Expression* Interpreter_parse_expression4_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression5(Interpreter* self);
-Expression* Interpreter_parse_expression5_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression6(Interpreter* self);
-Expression* Interpreter_parse_expression6_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression7(Interpreter* self);
-Expression* Interpreter_parse_expression7_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression8(Interpreter* self);
-Expression* Interpreter_parse_expression8_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression9(Interpreter* self);
-Expression* Interpreter_parse_expression9_tail(Interpreter* self,
-                                               Expression* lhs);
-
-Expression* Interpreter_parse_expression_prefix(Interpreter* self);
-
-Expression* Interpreter_parse_expression_root(Interpreter* self);
-
-Type* Interpreter_parse_type(Interpreter* self)
+Expression* parse_expression0(Interpreter* self)
 {
-    Interpreter_next_token(self);
-    switch (self->parser.token.tag)
-    {
-        case Tag_ID:
-        {
-            Type** type =
-                MAP_GET(Type*, self->machine.types, self->parser.token.lexeme);
-
-            if (!type)
-            {
-                Print("Type Error: Type %s is undefined\n",
-                      String_begin(self->parser.token.lexeme));
-                return NULL;
-            }
-
-            return Type_Copy(*type);
-        }
-        case '*':
-        {
-            Type* type = Interpreter_parse_type(self);
-
-            if (!type)
-            {
-                return NULL;
-            }
-
-            return (Type*)Type_Pointer_create(type);
-        }
-        case '[':
-        {
-            Interpreter_next_token(self);
-
-            if (self->parser.token.tag != Tag_LITERAL_INTEGER)
-            {
-                Interpreter_push_token(self, self->parser.token);
-                Type_Tuple* tuple = Type_Tuple_create();
-
-                for (int step = 1; step;)
-                {
-                    Type* type = Interpreter_parse_type(self);
-
-                    if (!type)
-                    {
-                        Type_destroy((Type*)tuple);
-                        return NULL;
-                    }
-
-                    Stack_push(&tuple->fields, &type);
-                    Interpreter_next_token(self);
-
-                    switch (self->parser.token.tag)
-                    {
-                        case ']':
-                        {
-                            step = 0;
-                        }
-                        case ',':
-                        {
-                            break;
-                        }
-                        default:
-                        {
-                            Type_destroy((Type*)tuple);
-                            return NULL;
-                        }
-                    }
-                }
-
-                return (Type*)tuple;
-            }
-
-            U64 size =
-                strtoull(String_begin(self->parser.token.lexeme), NULL, 10);
-
-            Interpreter_next_token(self);
-
-            if (self->parser.token.tag != ']')
-            {
-                return NULL;
-            }
-
-            Type* type = Interpreter_parse_type(self);
-
-            if (!type)
-            {
-                return NULL;
-            }
-
-            return (Type*)Type_Array_create(type, size);
-        }
-        case '(':
-        {
-            Type_Function* function = Type_Function_create();
-            Interpreter_next_token(self);
-            if (self->parser.token.tag != Tag_VOID)
-            {
-                Interpreter_push_token(self, self->parser.token);
-                for (int step = 1; step;)
-                {
-                    Type* type = Interpreter_parse_type(self);
-                    if (!type)
-                    {
-                        Type_destroy((Type*)function);
-                        return NULL;
-                    }
-                    STACK_PUSH(p_Type, function->params, type);
-                    Interpreter_next_token(self);
-                    switch (self->parser.token.tag)
-                    {
-                        case Tag_ARROW:
-                        {
-                            step = 0;
-                        }
-                        case ',':
-                        {
-                            break;
-                        }
-                        default:
-                        {
-                            Type_destroy((Type*)function);
-                            return NULL;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                Interpreter_next_token(self);
-                if (self->parser.token.tag != Tag_ARROW)
-                {
-                    Type_destroy((Type*)function);
-                    return NULL;
-                }
-            }
-            Interpreter_next_token(self);
-            if (self->parser.token.tag != Tag_VOID)
-            {
-                Interpreter_push_token(self, self->parser.token);
-                Type_Tuple* tuple = Type_Tuple_create();
-                for (int step = 1; step;)
-                {
-                    Type* type = Interpreter_parse_type(self);
-                    if (!type)
-                    {
-                        Type_destroy((Type*)tuple);
-                        Type_destroy((Type*)function);
-                        return NULL;
-                    }
-                    STACK_PUSH(Type*, tuple->fields, type);
-                    Interpreter_next_token(self);
-                    switch (self->parser.token.tag)
-                    {
-                        case ')':
-                        {
-                            step = 0;
-                        }
-                        case ',':
-                        {
-                            break;
-                        }
-                        default:
-                        {
-                            Type_destroy((Type*)tuple);
-                            Type_destroy((Type*)function);
-                            return NULL;
-                        }
-                    }
-                }
-                function->return_type = (Type*)tuple;
-            }
-            else
-            {
-                Interpreter_next_token(self);
-                if (self->parser.token.tag != ')')
-                {
-                    Type_destroy((Type*)function);
-                    return NULL;
-                }
-                function->return_type = NULL;
-            }
-            return (Type*)function;
-        }
-        default:
-        {
-            return NULL;
-        }
-    }
+    return parse_expression0_tail(self, parse_expression1(self));
 }
 
-Expression* Interpreter_parse_expression0(Interpreter* self)
-{
-    return Interpreter_parse_expression0_tail(
-        self, Interpreter_parse_expression1(self));
-}
-
-Expression* Interpreter_parse_expression0_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression0_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -483,7 +260,7 @@ Expression* Interpreter_parse_expression0_tail(Interpreter* self,
     {
         case '=':
         {
-            Expression* rhs = Interpreter_parse_expression0(self);
+            Expression* rhs = parse_expression0(self);
 
             if (!rhs)
             {
@@ -503,14 +280,12 @@ Expression* Interpreter_parse_expression0_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression1(Interpreter* self)
+Expression* parse_expression1(Interpreter* self)
 {
-    return Interpreter_parse_expression1_tail(
-        self, Interpreter_parse_expression2(self));
+    return parse_expression1_tail(self, parse_expression2(self));
 }
 
-Expression* Interpreter_parse_expression1_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression1_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -529,7 +304,7 @@ Expression* Interpreter_parse_expression1_tail(Interpreter* self,
             {
                 tuple = (Expression_Tuple*)(lhs);
 
-                Expression* rhs = Interpreter_parse_expression3(self);
+                Expression* rhs = parse_expression3(self);
 
                 if (!rhs)
                 {
@@ -542,7 +317,7 @@ Expression* Interpreter_parse_expression1_tail(Interpreter* self,
             }
             else
             {
-                Expression* rhs = Interpreter_parse_expression3(self);
+                Expression* rhs = parse_expression3(self);
 
                 if (!rhs)
                 {
@@ -556,7 +331,7 @@ Expression* Interpreter_parse_expression1_tail(Interpreter* self,
                 Stack_push(&tuple->fields, &rhs);
             }
 
-            return Interpreter_parse_expression1_tail(self, (Expression*)tuple);
+            return parse_expression1_tail(self, (Expression*)tuple);
         }
         default:
         {
@@ -566,14 +341,12 @@ Expression* Interpreter_parse_expression1_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression2(Interpreter* self)
+Expression* parse_expression2(Interpreter* self)
 {
-    return Interpreter_parse_expression2_tail(
-        self, Interpreter_parse_expression3(self));
+    return parse_expression2_tail(self, parse_expression3(self));
 }
 
-Expression* Interpreter_parse_expression2_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression2_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -588,7 +361,7 @@ Expression* Interpreter_parse_expression2_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression3(self);
+            Expression* rhs = parse_expression3(self);
 
             if (!rhs)
             {
@@ -599,8 +372,7 @@ Expression* Interpreter_parse_expression2_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression2_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression2_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -610,14 +382,12 @@ Expression* Interpreter_parse_expression2_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression3(Interpreter* self)
+Expression* parse_expression3(Interpreter* self)
 {
-    return Interpreter_parse_expression3_tail(
-        self, Interpreter_parse_expression4(self));
+    return parse_expression3_tail(self, parse_expression4(self));
 }
 
-Expression* Interpreter_parse_expression3_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression3_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -632,7 +402,7 @@ Expression* Interpreter_parse_expression3_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression4(self);
+            Expression* rhs = parse_expression4(self);
 
             if (!rhs)
             {
@@ -643,8 +413,7 @@ Expression* Interpreter_parse_expression3_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression3_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression3_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -654,14 +423,12 @@ Expression* Interpreter_parse_expression3_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression4(Interpreter* self)
+Expression* parse_expression4(Interpreter* self)
 {
-    return Interpreter_parse_expression4_tail(
-        self, Interpreter_parse_expression5(self));
+    return parse_expression4_tail(self, parse_expression5(self));
 }
 
-Expression* Interpreter_parse_expression4_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression4_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -676,7 +443,7 @@ Expression* Interpreter_parse_expression4_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression5(self);
+            Expression* rhs = parse_expression5(self);
 
             if (!rhs)
             {
@@ -687,8 +454,7 @@ Expression* Interpreter_parse_expression4_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression4_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression4_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -698,14 +464,12 @@ Expression* Interpreter_parse_expression4_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression5(Interpreter* self)
+Expression* parse_expression5(Interpreter* self)
 {
-    return Interpreter_parse_expression5_tail(
-        self, Interpreter_parse_expression6(self));
+    return parse_expression5_tail(self, parse_expression6(self));
 }
 
-Expression* Interpreter_parse_expression5_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression5_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -721,7 +485,7 @@ Expression* Interpreter_parse_expression5_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression6(self);
+            Expression* rhs = parse_expression6(self);
 
             if (!rhs)
             {
@@ -732,8 +496,7 @@ Expression* Interpreter_parse_expression5_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression5_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression5_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -743,14 +506,12 @@ Expression* Interpreter_parse_expression5_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression6(Interpreter* self)
+Expression* parse_expression6(Interpreter* self)
 {
-    return Interpreter_parse_expression6_tail(
-        self, Interpreter_parse_expression7(self));
+    return parse_expression6_tail(self, parse_expression7(self));
 }
 
-Expression* Interpreter_parse_expression6_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression6_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -768,7 +529,7 @@ Expression* Interpreter_parse_expression6_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression7(self);
+            Expression* rhs = parse_expression7(self);
 
             if (!rhs)
             {
@@ -779,8 +540,7 @@ Expression* Interpreter_parse_expression6_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression6_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression6_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -790,14 +550,12 @@ Expression* Interpreter_parse_expression6_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression7(Interpreter* self)
+Expression* parse_expression7(Interpreter* self)
 {
-    return Interpreter_parse_expression7_tail(
-        self, Interpreter_parse_expression8(self));
+    return parse_expression7_tail(self, parse_expression8(self));
 }
 
-Expression* Interpreter_parse_expression7_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression7_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -813,7 +571,7 @@ Expression* Interpreter_parse_expression7_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression8(self);
+            Expression* rhs = parse_expression8(self);
 
             if (!rhs)
             {
@@ -824,8 +582,7 @@ Expression* Interpreter_parse_expression7_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression7_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression7_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -835,14 +592,12 @@ Expression* Interpreter_parse_expression7_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression8(Interpreter* self)
+Expression* parse_expression8(Interpreter* self)
 {
-    return Interpreter_parse_expression8_tail(
-        self, Interpreter_parse_expression9(self));
+    return parse_expression8_tail(self, parse_expression9(self));
 }
 
-Expression* Interpreter_parse_expression8_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression8_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -858,7 +613,7 @@ Expression* Interpreter_parse_expression8_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression9(self);
+            Expression* rhs = parse_expression9(self);
 
             if (!rhs)
             {
@@ -869,8 +624,7 @@ Expression* Interpreter_parse_expression8_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression8_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression8_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -880,14 +634,12 @@ Expression* Interpreter_parse_expression8_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression9(Interpreter* self)
+Expression* parse_expression9(Interpreter* self)
 {
-    return Interpreter_parse_expression9_tail(
-        self, Interpreter_parse_expression_prefix(self));
+    return parse_expression9_tail(self, parse_expression_prefix(self));
 }
 
-Expression* Interpreter_parse_expression9_tail(Interpreter* self,
-                                               Expression* lhs)
+Expression* parse_expression9_tail(Interpreter* self, Expression* lhs)
 {
     if (!lhs)
     {
@@ -904,7 +656,7 @@ Expression* Interpreter_parse_expression9_tail(Interpreter* self,
         {
             int op = self->parser.token.tag;
 
-            Expression* rhs = Interpreter_parse_expression_prefix(self);
+            Expression* rhs = parse_expression_prefix(self);
 
             if (!rhs)
             {
@@ -915,8 +667,7 @@ Expression* Interpreter_parse_expression9_tail(Interpreter* self,
             binary->op = op;
             binary->lhs = lhs;
             binary->rhs = rhs;
-            return Interpreter_parse_expression9_tail(self,
-                                                      (Expression*)binary);
+            return parse_expression9_tail(self, (Expression*)binary);
         }
         default:
         {
@@ -926,41 +677,53 @@ Expression* Interpreter_parse_expression9_tail(Interpreter* self,
     }
 }
 
-Expression* Interpreter_parse_expression_prefix(Interpreter* self)
+Expression* parse_expression_prefix(Interpreter* self)
 {
     Interpreter_next_token(self);
 
     switch (self->parser.token.tag)
     {
+        case '*':
         case '!':
         case '-':
         case '~':
-        case '*':
         case '&':
         {
             int op = self->parser.token.tag;
 
-            Expression* expression = Interpreter_parse_expression0(self);
+            Expression* expression = parse_expression0(self);
 
             if (!expression)
             {
                 return NULL;
             }
 
-            Expression_Unary* unary = Expression_Unary_create();
-            unary->op = op;
-            unary->expression = expression;
-            return (Expression*)unary;
+            if (op == '*' && expression->expression_id == EXPRESSION_TYPE)
+            {
+                Expression_Type* type_expression =
+                    (Expression_Type*)(expression);
+
+                type_expression->type =
+                    (Type*)(Type_Pointer_create(type_expression->type));
+                return (Expression*)(type_expression);
+            }
+            else
+            {
+                Expression_Unary* unary = Expression_Unary_create();
+                unary->op = op;
+                unary->expression = expression;
+                return (Expression*)(unary);
+            }
         }
         default:
         {
             Interpreter_push_token(self, self->parser.token);
-            return Interpreter_parse_expression_root(self);
+            return parse_expression_root(self);
         }
     }
 }
 
-Expression* Interpreter_parse_expression_root(Interpreter* self)
+Expression* parse_expression_root(Interpreter* self)
 {
     Interpreter_next_token(self);
 
@@ -968,7 +731,7 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
     {
         case '(':
         {
-            Expression* expression = Interpreter_parse_expression0(self);
+            Expression* expression = parse_expression0(self);
 
             if (!expression)
             {
@@ -979,12 +742,13 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
 
             if (self->parser.token.tag != ')')
             {
-                printf("Missing closing braces\n");
+                Print("Missing closing braces\n");
                 return NULL;
             }
 
             return expression;
         }
+        /*
         case Tag_S_CAST:
         {
             Interpreter_next_token(self);
@@ -994,7 +758,7 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
                 return NULL;
             }
 
-            Type* type = Interpreter_parse_type(self);
+            Type* type = parse_type(self);
 
             if (!type)
             {
@@ -1008,7 +772,7 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
                 return NULL;
             }
 
-            Expression* expression = Interpreter_parse_expression0(self);
+            Expression* expression = parse_expression0(self);
 
             if (!expression)
             {
@@ -1027,6 +791,7 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
             cast->expression = expression;
             return (Expression*)cast;
         }
+        */
         case Tag_LITERAL_STRING:
         {
             Expression_String_Literal* lit = Expression_String_Literal_create();
@@ -1054,17 +819,39 @@ Expression* Interpreter_parse_expression_root(Interpreter* self)
             lit->value = self->parser.token.lexeme;
             return (Expression*)lit;
         }
+        case '[':
+        {
+        }
         case Tag_ID:
         {
-            Expression_Reference* ref = Expression_Reference_create();
-            ref->id = self->parser.token.lexeme;
-            return (Expression*)ref;
+            Symbol* symbol =
+                Interpreter_get_symbol(self, self->parser.token.lexeme);
+
+            if (!symbol)
+            {
+                Print("Symbol %s is not defined\n",
+                      String_begin(self->parser.token.lexeme));
+                return NULL;
+            }
+
+            if (symbol->type->type_id == TYPE_TYPE)
+            {
+                Expression_Type* type_expression = Expression_Type_create();
+                type_expression->type = (Type*)(symbol->value);
+                return (Expression*)type_expression;
+            }
+            else
+            {
+                Expression_Reference* reference_expression =
+                    Expression_Reference_create();
+                reference_expression->id = self->parser.token.lexeme;
+                return (Expression*)reference_expression;
+            }
         }
         default:
         {
-            printf("Expected a valid expression.\n");
+            Print("Expected a valid expression.\n");
             return NULL;
         }
     }
 }
-*/

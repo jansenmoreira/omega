@@ -80,11 +80,21 @@ typedef struct Type_Function
     Type* return_type;
 } Type_Function;
 
-Type_Integer* Type_Integer_create(size_t size, int is_signed);
-Type_Float* Type_Float_create(size_t size);
+Type* type_u8;
+Type* type_u16;
+Type* type_u32;
+Type* type_u64;
+Type* type_s8;
+Type* type_s16;
+Type* type_s32;
+Type* type_s64;
+Type* type_fp32;
+Type* type_fp64;
+Type* type_type;
+
 Type_Array* Type_Array_create(Type* type, size_t size);
 Type_Pointer* Type_Pointer_create(Type* type);
-Type_Struct* Type_Struct_create();
+Type_Struct* Type_Struct_create(String id);
 Type_Tuple* Type_Tuple_create();
 Type_Function* Type_Function_create();
 

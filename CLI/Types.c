@@ -1,91 +1,78 @@
 #include <CLI/Types.h>
 
-Type_Integer type_u8 = {
+static Type_Integer type_u8_v = {
     .type_id = TYPE_INTEGER,
     .size = 1,
     .is_signed = 0,
 };
 
-Type_Integer type_u16 = {
+static Type_Integer type_u16_v = {
     .type_id = TYPE_INTEGER,
     .size = 2,
     .is_signed = 0,
 };
 
-Type_Integer type_u32 = {
+static Type_Integer type_u32_v = {
     .type_id = TYPE_INTEGER,
     .size = 4,
     .is_signed = 0,
 };
 
-Type_Integer type_u64 = {
+static Type_Integer type_u64_v = {
     .type_id = TYPE_INTEGER,
     .size = 8,
     .is_signed = 0,
 };
 
-Type_Integer type_s8 = {
+static Type_Integer type_s8_v = {
     .type_id = TYPE_INTEGER,
     .size = 1,
     .is_signed = 1,
 };
 
-Type_Integer type_s16 = {
+static Type_Integer type_s16_v = {
     .type_id = TYPE_INTEGER,
     .size = 2,
     .is_signed = 1,
 };
 
-Type_Integer type_s32 = {
+static Type_Integer type_s32_v = {
     .type_id = TYPE_INTEGER,
     .size = 4,
     .is_signed = 1,
 };
 
-Type_Integer type_s64 = {
+static Type_Integer type_s64_v = {
     .type_id = TYPE_INTEGER,
     .size = 8,
     .is_signed = 1,
 };
 
-Type_Float type_fp32 = {
+static Type_Float type_fp32_v = {
     .type_id = TYPE_FLOAT,
     .size = 4,
 };
 
-Type_Float type_fp64 = {
+static Type_Float type_fp64_v = {
     .type_id = TYPE_FLOAT,
     .size = 8,
 };
 
-Type_Type type_type = {
+static Type_Type type_type_v = {
     .type_id = TYPE_TYPE,
 };
 
-Type_Type* Type_Type_create(Type* type)
-{
-    return &type_type;
-}
-
-Type_Integer* Type_Integer_create(size_t size, Boolean is_signed)
-{
-    switch (size)
-    {
-        case 1:
-            return (is_signed) ? &type_s8 : &type_u8;
-        case 2:
-            return (is_signed) ? &type_s16 : &type_u16;
-        case 4:
-            return (is_signed) ? &type_s32 : &type_u32;
-        case 8:
-            return (is_signed) ? &type_s64 : &type_u64;
-    }
-}
-
-Type_Float* Type_Float_create(size_t size)
-{
-    return (size == 4) ? &type_fp32 : &type_fp64;
-}
+Type* type_u8 = (Type*)(&type_u8_v);
+Type* type_u16 = (Type*)(&type_u16_v);
+Type* type_u32 = (Type*)(&type_u32_v);
+Type* type_u64 = (Type*)(&type_u64_v);
+Type* type_s8 = (Type*)(&type_s8_v);
+Type* type_s16 = (Type*)(&type_s16_v);
+Type* type_s32 = (Type*)(&type_s32_v);
+Type* type_s64 = (Type*)(&type_s64_v);
+Type* type_fp32 = (Type*)(&type_fp32_v);
+Type* type_fp64 = (Type*)(&type_fp64_v);
+Type* type_type = (Type*)(&type_type_v);
 
 Type_Array* Type_Array_create(Type* type, size_t size)
 {
