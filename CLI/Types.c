@@ -1,3 +1,4 @@
+/*
 #include <CLI/Types.h>
 
 static Type_Integer type_u8_v = {
@@ -73,6 +74,11 @@ Type* type_s64 = (Type*)(&type_s64_v);
 Type* type_fp32 = (Type*)(&type_fp32_v);
 Type* type_fp64 = (Type*)(&type_fp64_v);
 Type* type_type = (Type*)(&type_type_v);
+
+Type_Type* Type_Type_create(Type* type)
+{
+    Type_Type* self = (Type_Type*)malloc(sizeof(Type_Type));
+}
 
 Type_Array* Type_Array_create(Type* type, size_t size)
 {
@@ -782,3 +788,4 @@ void Type_print_value(Type* type, void* value)
         }
     }
 }
+*/

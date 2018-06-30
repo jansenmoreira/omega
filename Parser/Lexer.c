@@ -1,4 +1,4 @@
-#include <CLI/Lexer.h>
+#include <Parser/Lexer.h>
 
 enum State
 {

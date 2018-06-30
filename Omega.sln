@@ -6,9 +6,8 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Support", "Support\Support.vcxproj", "{407B8FE7-E1D9-4AB0-B68B-D076E22D6E51}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Machine", "Machine\Machine.vcxproj", "{782CEC56-A1E6-40A6-9AB7-A5C261891EF5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{407B8FE7-E1D9-4AB0-B68B-D076E22D6E51} = {407B8FE7-E1D9-4AB0-B68B-D076E22D6E51}
-	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Parser", "Parser\Parser.vcxproj", "{82524C9D-8E49-4788-BF23-4513BC315F63}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CLI", "CLI\CLI.vcxproj", "{863D5C5F-4DBE-4A62-B571-28EE2D5A408B}"
 EndProject
@@ -19,6 +18,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{407B8FE7-E1D9-4AB0-B68B-D076E22D6E51}.Debug|x64.ActiveCfg = Debug|x64
 		{407B8FE7-E1D9-4AB0-B68B-D076E22D6E51}.Debug|x64.Build.0 = Debug|x64
+		{82524C9D-8E49-4788-BF23-4513BC315F63}.Debug|x64.ActiveCfg = Debug|x64
+		{82524C9D-8E49-4788-BF23-4513BC315F63}.Debug|x64.Build.0 = Debug|x64
 		{782CEC56-A1E6-40A6-9AB7-A5C261891EF5}.Debug|x64.ActiveCfg = Debug|x64
 		{782CEC56-A1E6-40A6-9AB7-A5C261891EF5}.Debug|x64.Build.0 = Debug|x64
 		{863D5C5F-4DBE-4A62-B571-28EE2D5A408B}.Debug|x64.ActiveCfg = Debug|x64

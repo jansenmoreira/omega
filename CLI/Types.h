@@ -1,3 +1,4 @@
+/*
 #ifndef TYPES_H
 #define TYPES_H
 
@@ -24,6 +25,7 @@ typedef struct Type
 typedef struct Type_Type
 {
     Type_ID type_id;
+    Type* type;
 } Type_Type;
 
 typedef struct Type_Float
@@ -92,6 +94,7 @@ Type* type_fp32;
 Type* type_fp64;
 Type* type_type;
 
+Type_Type* Type_Type_create(Type* type);
 Type_Array* Type_Array_create(Type* type, size_t size);
 Type_Pointer* Type_Pointer_create(Type* type);
 Type_Struct* Type_Struct_create(String id);
@@ -111,3 +114,4 @@ void Type_print(Type* type);
 void Type_print_value(Type* type, void* value);
 
 #endif
+*/

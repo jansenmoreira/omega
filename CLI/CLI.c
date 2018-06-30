@@ -1,12 +1,10 @@
-#include <CLI/Interpreter.h>
 #include <Machine/Execution.h>
 #include <Support/Performance.h>
+#include <Support/String.h>
 
 int main(int argc, char** argv)
 {
     String_init();
-
-    Interpreter_loop();
 
     String_free();
 
