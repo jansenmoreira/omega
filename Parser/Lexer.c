@@ -96,6 +96,10 @@ void Lexer_init()
     String s_s_size = String_new("$size", 5);
     int t_s_size = Tag_S_SIZE;
     Map_set(&keywords, s_s_size, &t_s_size);
+
+    String s_function = String_new("function", 8);
+    int t_function = Tag_FUNCTION;
+    Map_set(&keywords, s_function, &t_function);
 }
 
 void Lexer_free()

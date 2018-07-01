@@ -62,6 +62,9 @@
     <ProjectReference Include="..\Machine\Machine.vcxproj">
       <Project>{782cec56-a1e6-40a6-9ab7-a5c261891ef5}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Parser\Parser.vcxproj">
+      <Project>{82524c9d-8e49-4788-bf23-4513bc315f63}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Support\Support.vcxproj">
       <Project>{407b8fe7-e1d9-4ab0-b68b-d076e22d6e51}</Project>
     </ProjectReference>

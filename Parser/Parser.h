@@ -12,3 +12,5 @@ typedef struct Parser
     Stack queue;
     size_t queue_it;
 } Parser;
+
+void Parser_loop();

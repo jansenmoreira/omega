@@ -49,6 +49,7 @@ typedef enum Tag
     Tag_VOID,
     Tag_S_CAST,
     Tag_S_SIZE,
+    Tag_FUNCTION,
 
     Tag_UNKNOW,
 } Tag;

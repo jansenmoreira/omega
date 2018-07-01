@@ -11,6 +11,7 @@ typedef enum AST_ID
     AST_IMPORT,
     AST_DECLARE,
     AST_STRUCT,
+    AST_MAP,
     AST_FUNCTION,
     AST_WHILE,
     AST_IF,
@@ -25,13 +26,21 @@ typedef enum AST_ID
     AST_REFERENCE,
     AST_SUBSCRIPTING,
     AST_MEMBER,
-    AST_CALL
+    AST_CALL,
+    AST_BLOCK
 } AST_ID;
 
 typedef struct AST
 {
     AST_ID AST_id;
 } AST;
+
+typedef struct AST_Block
+{
+    AST_ID AST_id;
+
+    Stack statements;
+} AST_Block;
 
 typedef struct AST_Program
 {
@@ -55,7 +64,7 @@ typedef struct AST_Declare
 
     String id;
     AST* type;
-    AST* initiliazer;
+    AST* initializer;
 } AST_Declare;
 
 typedef struct AST_Struct
@@ -72,10 +81,12 @@ typedef struct AST_Function
     AST_ID AST_id;
 
     Stack in_ids;
-    Stack in_types;
+    AST* in_type;
 
     Stack out_ids;
-    Stack out_types;
+    AST* out_type;
+
+    AST* body;
 } AST_Function;
 
 typedef struct AST_While
@@ -148,6 +159,14 @@ typedef struct AST_String_Literal
     String value;
 } AST_String_Literal;
 
+typedef struct AST_Map
+{
+    AST_ID AST_id;
+
+    AST* params;
+    AST* result;
+} AST_Map;
+
 typedef struct AST_Tuple
 {
     AST_ID AST_id;
@@ -175,7 +194,7 @@ typedef struct AST_Member
     AST_ID AST_id;
 
     AST* lhs;
-    AST* rhs;
+    String id;
 } AST_Member;
 
 typedef struct AST_Call
@@ -183,13 +202,16 @@ typedef struct AST_Call
     AST_ID AST_id;
 
     AST* callee;
-    Stack arguments;
+    AST* argument;
 } AST_Call;
 
 AST_Program* AST_Program_create();
+AST_Block* AST_Block_create();
 AST_Import* AST_Import_create();
 AST_Declare* AST_Declare_create();
 AST_Struct* AST_Struct_create();
+AST_Function* AST_Function_create();
+AST_Map* AST_Map_create();
 AST_While* AST_While_create();
 AST_If* AST_If_create();
 AST_Size* AST_Size_create();
@@ -206,5 +228,6 @@ AST_Member* AST_Member_create();
 AST_Call* AST_Call_create();
 
 void AST_destroy(AST* self);
+void AST_print(AST* self);
 
 #endif
