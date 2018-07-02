@@ -1,7 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
-#include <Parser/Lexer.h>
+#include <Language/Lexer.h>
 #include <Support/Stack.h>
 #include <Support/String.h>
 
@@ -62,7 +62,7 @@ typedef struct AST_Declare
 
     Boolean is_const;
 
-    String id;
+    Stack ids;
     AST* type;
     AST* initializer;
 } AST_Declare;

@@ -1,4 +1,4 @@
-#include <Parser/AST.h>
+#include <Language/AST.h>
 
 AST_Program* AST_Program_create()
 {
@@ -28,7 +28,7 @@ AST_Declare* AST_Declare_create()
 {
     AST_Declare* self = (AST_Declare*)malloc(sizeof(AST_Declare));
     self->AST_id = AST_DECLARE;
-    self->id = String_new(NULL, 0);
+    self->ids = Stack_create(sizeof(String));
     self->is_const = False;
     self->type = NULL;
     self->initializer = NULL;
@@ -228,6 +228,7 @@ void AST_destroy(AST* self)
             AST_Declare* ast = (AST_Declare*)(self);
             AST_destroy(ast->type);
             AST_destroy(ast->initializer);
+            Stack_destroy(&ast->ids);
             break;
         }
         case AST_STRUCT:
@@ -388,12 +389,24 @@ void AST_print_tree(AST* self, size_t identation)
         case AST_DECLARE:
         {
             AST_Declare* ast = (AST_Declare*)(self);
-            Print("%*s<Declare id=\"%s\">\n", spaces, "",
-                  String_begin(ast->id));
+            Print("%*s<Declare>\n", spaces, "");
 
-            Print("%*s<Type>\n", spaces + width, "");
-            AST_print_tree(ast->type, identation + 2);
-            Print("%*s</Type>\n", spaces + width, "");
+            Print("%*s<IDs>\n", spaces + width, "");
+
+            for (size_t i = 0; i < ast->ids.size; i++)
+            {
+                Print("%*s<ID>%s</ID>\n", spaces + 2 * width, "",
+                      String_begin(*(String*)Stack_get(&ast->ids, i)));
+            }
+
+            Print("%*s</IDs>\n", spaces + width, "");
+
+            if (ast->type)
+            {
+                Print("%*s<Type>\n", spaces + width, "");
+                AST_print_tree(ast->type, identation + 2);
+                Print("%*s</Type>\n", spaces + width, "");
+            }
 
             if (ast->initializer)
             {
@@ -515,7 +528,7 @@ void AST_print_tree(AST* self, size_t identation)
         case AST_BINARY:
         {
             AST_Binary* ast = (AST_Binary*)(self);
-            Print("%*s<Binary op=\"%c\">\n", spaces, "", ast->op);
+            Print("%*s<Binary op=\"%d\">\n", spaces, "", ast->op);
             Print("%*s<LHS>\n", spaces + width, "");
             AST_print_tree(ast->lhs, identation + 2);
             Print("%*s</LHS>\n", spaces + width, "");
@@ -528,7 +541,7 @@ void AST_print_tree(AST* self, size_t identation)
         case AST_UNARY:
         {
             AST_Unary* ast = (AST_Unary*)(self);
-            Print("%*s<Unary op=\"%c\">\n", spaces, "", ast->op);
+            Print("%*s<Unary op=\"%d\">\n", spaces, "", ast->op);
             AST_print_tree(ast->expression, identation + 1);
             Print("%*s<Unary>\n", spaces, "");
             break;

@@ -1,3 +1,4 @@
+#include <Support/Console.h>
 #include <Support/File.h>
 
 Boolean File_open(File* self, String path)
@@ -27,7 +28,9 @@ Boolean File_open(File* self, String path)
     }
 
     if (ferror(stream))
+    {
         Panic(Memory_Error);
+    }
 
     self->text = (char*)malloc(sizeof(char) * (at + 1));
 
@@ -83,14 +86,14 @@ Position File_position(File* self, U64 at, int is_begin)
 
     position.line = first;
 
-    if (self->lines.buffer[position.line] == at)
+    if (*(U64*)(Stack_get(&self->lines, position.line)) == at)
     {
         position.line += 1;
     }
 
     position.column = 0;
 
-    for (U64 i = self->lines.buffer[position.line - 1];
+    for (U64 i = *(U64*)(Stack_get(&self->lines, position.line - 1));
          i < at || (!is_begin && i <= at);)
     {
         switch (File_utf_width)
@@ -182,7 +185,9 @@ Position File_position(File* self, U64 at, int is_begin)
     }
 
     if (is_begin)
+    {
         position.column += 1;
+    }
 
     return position;
 }

@@ -1,6 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <Support/File.h>
 #include <Support/Map.h>
 #include <Support/Stack.h>
 #include <Support/String.h>
@@ -56,27 +57,26 @@ typedef enum Tag
 
 typedef struct Token
 {
-    Tag tag;
-    String lexeme;
     size_t begin;
     size_t end;
-    String path;
+    File* file;
+    String lexeme;
+    Tag tag;
 } Token;
 
 typedef struct Lexer
 {
-    const char* buffer;
+    File* file;
     size_t at;
-    int ignore;
-    String path;
     Stack lexeme;
+    int ignore;
 } Lexer;
 
 void Lexer_init();
 
 void Lexer_free();
 
-Lexer Lexer_create(const char* buffer, String path);
+Lexer Lexer_create(File* file);
 
 void Lexer_destroy(Lexer* self);
 

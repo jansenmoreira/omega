@@ -1,5 +1,4 @@
-/*
-#include <CLI/Types.h>
+#include <Language/Types.h>
 
 static Type_Integer type_u8_v = {
     .type_id = TYPE_INTEGER,
@@ -75,12 +74,20 @@ Type* type_fp32 = (Type*)(&type_fp32_v);
 Type* type_fp64 = (Type*)(&type_fp64_v);
 Type* type_type = (Type*)(&type_type_v);
 
-Type_Type* Type_Type_create(Type* type)
+Type_Type* Type_Type_create()
 {
     Type_Type* self = (Type_Type*)malloc(sizeof(Type_Type));
+
+    if (!self)
+    {
+        Panic(Memory_Error);
+    }
+
+    self->type = NULL;
+    return self;
 }
 
-Type_Array* Type_Array_create(Type* type, size_t size)
+Type_Array* Type_Array_create()
 {
     Type_Array* self = (Type_Array*)malloc(sizeof(Type_Array));
 
@@ -90,12 +97,12 @@ Type_Array* Type_Array_create(Type* type, size_t size)
     }
 
     self->type_id = TYPE_ARRAY;
-    self->type = type;
-    self->size = size;
+    self->type = NULL;
+    self->size = 0;
     return self;
 }
 
-Type_Pointer* Type_Pointer_create(Type* type)
+Type_Pointer* Type_Pointer_create()
 {
     Type_Pointer* self = (Type_Pointer*)malloc(sizeof(Type_Pointer));
 
@@ -105,7 +112,7 @@ Type_Pointer* Type_Pointer_create(Type* type)
     }
 
     self->type_id = TYPE_POINTER;
-    self->type = type;
+    self->type = NULL;
     return self;
 }
 
@@ -123,7 +130,7 @@ Type_Tuple* Type_Tuple_create()
     return self;
 }
 
-Type_Struct* Type_Struct_create(String id)
+Type_Struct* Type_Struct_create()
 {
     Type_Struct* self = (Type_Struct*)malloc(sizeof(Type_Struct));
 
@@ -133,7 +140,7 @@ Type_Struct* Type_Struct_create(String id)
     }
 
     self->type_id = TYPE_STRUCT;
-    self->id = id;
+    self->id = String_new(NULL, 0);
     self->field_types = Stack_create(sizeof(Type*));
     self->field_ids = Stack_create(sizeof(String));
     return self;
@@ -150,6 +157,7 @@ Type_Function* Type_Function_create()
 
     self->type_id = TYPE_FUNCTION;
     self->params = Stack_create(sizeof(Type*));
+    self->return_type = NULL;
     return self;
 }
 
@@ -630,162 +638,3 @@ void Type_print(Type* type)
         }
     }
 }
-
-void Type_print_value(Type* type, void* value)
-{
-    switch (type->type_id)
-    {
-        case TYPE_INTEGER:
-        {
-            Type_Integer* casted = (Type_Integer*)type;
-
-            switch (casted->size)
-            {
-                case 1:
-                {
-                    if (!casted->is_signed)
-                    {
-                        Print("%" PRIu8, *((U8*)value));
-                    }
-                    else
-                    {
-                        Print("%" PRIi8, *((S8*)value));
-                    }
-
-                    break;
-                }
-                case 2:
-                {
-                    if (!casted->is_signed)
-                    {
-                        Print("%" PRIu16, *((U16*)value));
-                    }
-                    else
-                    {
-                        Print("%" PRIi16, *((S16*)value));
-                    }
-
-                    break;
-                }
-                case 4:
-                {
-                    if (!casted->is_signed)
-                    {
-                        Print("%" PRIu32, *((U32*)value));
-                    }
-                    else
-                    {
-                        Print("%" PRIi32, *((S32*)value));
-                    }
-
-                    break;
-                }
-                case 8:
-                {
-                    if (!casted->is_signed)
-                    {
-                        Print("%" PRIu64, *((U64*)value));
-                    }
-                    else
-                    {
-                        Print("%" PRIi64, *((S64*)value));
-                    }
-
-                    break;
-                }
-            }
-
-            break;
-        }
-        case TYPE_FLOAT:
-        {
-            Type_Float* casted = (Type_Float*)type;
-
-            switch (casted->size)
-            {
-                case 4:
-                {
-                    Print("%f", *((float*)value));
-                    break;
-                }
-                case 8:
-                {
-                    Print("%lf", *((double*)value));
-                    break;
-                }
-            }
-
-            break;
-        }
-        case TYPE_TYPE:
-        {
-            Type* type = (Type*)value;
-            Print("Type => ");
-            Type_print(type);
-            break;
-        }
-        case TYPE_ARRAY:
-        {
-            Type_Array* casted = (Type_Array*)type;
-
-            Print("[ ");
-
-            for (size_t i = 0; i < casted->size; i++)
-            {
-                Type_print_value(casted->type, value);
-                value = ((U8*)value) + Type_size(casted->type);
-                Print(", ");
-            }
-
-            Print("]");
-
-            break;
-        }
-        case TYPE_POINTER:
-        case TYPE_FUNCTION:
-        {
-            Print("%016" PRIX64, *(U64**)(value));
-            break;
-        }
-        case TYPE_TUPLE:
-        {
-            Type_Tuple* casted = (Type_Tuple*)type;
-
-            Print("[ ");
-
-            for (size_t i = 0; i < casted->fields.size; i++)
-            {
-                Type* field_type = *(Type**)Stack_get(&casted->fields, i);
-                Type_print_value(field_type, value);
-                value = ((U8*)value) + Type_size(field_type);
-                Print(", ");
-            }
-
-            Print("]");
-            break;
-        }
-        case TYPE_STRUCT:
-        {
-            Type_Struct* casted = (Type_Struct*)type;
-
-            Print("{ ");
-
-            for (size_t i = 0; i < casted->field_types.size; i++)
-            {
-                Print("%s : ",
-                      String_begin(*(String*)Stack_get(&casted->field_ids, i)));
-
-                Type* field_type = *(Type**)Stack_get(&casted->field_types, i);
-
-                Type_print_value(field_type, value);
-
-                value = ((U8*)value) + Type_size(field_type);
-                Print(", ");
-            }
-
-            Print("}");
-            break;
-        }
-    }
-}
-*/

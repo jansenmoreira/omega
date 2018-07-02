@@ -169,6 +169,11 @@ static Boolean Write(HANDLE handle, const char* format, va_list args)
     return True;
 }
 
+Boolean Error_va(const char* format, va_list args)
+{
+    return Write(GetStdHandle(STD_ERROR_HANDLE), format, args);
+}
+
 Boolean Error(const char* format, ...)
 {
     va_list args;

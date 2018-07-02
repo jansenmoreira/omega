@@ -1,6 +1,6 @@
-#include <Parser\Parser.h>
+#include <Language/Parser.h>
 
-void Parser_top_level(Parser* self);
+AST* Parser_top_level(Parser* self);
 
 AST* Parse_expression0(Parser* self);
 AST* Parse_expression0_tail(Parser* self, AST* lhs);
@@ -43,97 +43,134 @@ AST* Parse_block(Parser* self);
 void Parser_next_token(Parser* self);
 void Parser_push_token(Parser* self, Token token);
 
-void Parser_loop()
+static void LogError(Token token, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    Position position = File_position(token.file, token.begin, True);
+
+    Error("SyntaxError (%s:%" PRIu64 ":% " PRIu64 "): ",
+          String_begin(token.file->path), position.line, position.column);
+
+    Error_va(format, args);
+
+    Error("\n");
+
+    va_end(args);
+}
+
+AST* Parse(String path)
 {
     Parser self;
     self.queue = Stack_create(sizeof(Token));
+    self.queue_it = 0;
 
-    Lexer_init();
-
-    for (size_t i = 0;; i++)
+    File file;
+    if (!File_open(&file, path))
     {
-        Error("omega:%" PRIu64 "> ", i);
-
-        char* line = Read();
-
-        self.queue_it = 0;
-        Stack_clear(&self.queue);
-
-        self.lexer = Lexer_create(line, String_fmt("omega:%" PRIu64 "", i));
-
-        Parser_top_level(&self);
-
-        free(line);
+        Error("I/O.Error: \"%s\" not found!\n", String_begin(path));
+        return NULL;
     }
 
-    Lexer_free();
+    self.lexer = Lexer_create(&file);
+
+    return Parser_top_level(&self);
 }
 
 AST* Parse_declare(Parser* self)
 {
-    Tag type_of_declaration = self->token.tag;
+    AST_Declare* declaration = AST_Declare_create();
 
-    Parser_next_token(self);
+    declaration->is_const = self->token.tag == Tag_CONST;
 
-    if (self->token.tag != Tag_ID)
+    for (Boolean step = True; step;)
     {
-        Error("SyntaxError: Expected an identifier\n");
-        return NULL;
+        Parser_next_token(self);
+
+        if (self->token.tag != Tag_ID)
+        {
+            LogError(self->token, "expected an identifier");
+            return NULL;
+        }
+
+        Stack_push(&declaration->ids, &self->token.lexeme);
+
+        Parser_next_token(self);
+
+        if (self->token.tag != ',')
+        {
+            step = False;
+        }
     }
-
-    String id = self->token.lexeme;
-
-    Parser_next_token(self);
 
     if (self->token.tag != ':')
     {
-        Error("SyntaxError: Expected ':'\n");
-        return NULL;
-    }
-
-    AST* type = Parse_expression0(self);
-
-    if (!type)
-    {
+        LogError(self->token, "Expected ':'");
         return NULL;
     }
 
     Parser_next_token(self);
 
-    AST* initializer = NULL;
-
     if (self->token.tag == '=')
     {
-        initializer = Parse_expression0(self);
+        declaration->initializer = Parse_expression0(self);
 
-        if (!initializer)
+        if (!declaration->initializer)
         {
+            AST_destroy((AST*)(declaration));
             return NULL;
         }
 
         Parser_next_token(self);
     }
+    else
+    {
+        Parser_push_token(self, self->token);
+
+        declaration->type = Parse_expression0(self);
+
+        if (!declaration->type)
+        {
+            AST_destroy((AST*)(declaration));
+            return NULL;
+        }
+
+        Parser_next_token(self);
+
+        if (self->token.tag == '=')
+        {
+            declaration->initializer = Parse_expression0(self);
+
+            if (!declaration->initializer)
+            {
+                AST_destroy((AST*)(declaration));
+                return NULL;
+            }
+
+            Parser_next_token(self);
+        }
+    }
 
     if (self->token.tag != ';')
     {
-        Error("SyntaxError: expected ';'\n");
+        LogError(self->token, "Expected ';'");
+        AST_destroy((AST*)(declaration));
         return NULL;
     }
 
-    AST_Declare* declaration = AST_Declare_create();
-    declaration->id = id;
-    declaration->type = type;
-    declaration->initializer = initializer;
     return (AST*)(declaration);
 }
 
-void Parser_top_level(Parser* self)
+AST* Parser_top_level(Parser* self)
 {
     AST_Program* ast = AST_Program_create();
 
     for (Boolean step = True; step;)
     {
         Parser_next_token(self);
+
+        Boolean failed = False;
 
         switch (self->token.tag)
         {
@@ -148,21 +185,44 @@ void Parser_top_level(Parser* self)
 
                 if (self->token.tag != Tag_LITERAL_STRING)
                 {
-                    Error("SyntaxError: Expected an 'String Literal'");
-                    return;
+                    LogError(self->token, "Expected a 'String Literal'");
+                    failed = True;
+                    break;
                 }
 
-                AST_Import* import_ = AST_Import_create();
-                import_->path = self->token.lexeme;
+                String path = self->token.lexeme;
 
-                Stack_push(&ast->statements, &import_);
+                Parser_next_token(self);
+
+                if (self->token.tag != ';')
+                {
+                    LogError(self->token, "Expected ';'");
+                    failed = True;
+                    break;
+                }
+
+                AST* imported = Parse(path);
+
+                if (imported)
+                {
+                    Stack_push(&ast->statements, &imported);
+                }
+
                 break;
             }
             case Tag_VAR:
             case Tag_CONST:
             {
                 AST* declaration = Parse_declare(self);
+
+                if (!declaration)
+                {
+                    failed = True;
+                    break;
+                }
+
                 Stack_push(&ast->statements, &declaration);
+
                 break;
             }
             default:
@@ -170,6 +230,12 @@ void Parser_top_level(Parser* self)
                 Parser_push_token(self, self->token);
 
                 AST* expression = Parse_expression0(self);
+
+                if (!expression)
+                {
+                    failed = True;
+                    break;
+                }
 
                 Parser_next_token(self);
 
@@ -179,27 +245,43 @@ void Parser_top_level(Parser* self)
 
                     if (!rhs)
                     {
-                        return;
+                        AST_destroy(expression);
+                        failed = True;
+                        break;
                     }
 
                     AST_Assign* assign = AST_Assign_create();
                     assign->lhs = expression;
                     assign->rhs = rhs;
+                    expression = (AST*)(assign);
 
-                    Stack_push(&ast->statements, &assign);
+                    Parser_next_token(self);
                 }
-                else
+
+                if (self->token.tag != ';')
                 {
-                    Stack_push(&ast->statements, &expression);
+                    LogError(self->token, "Expected ';'");
+                    AST_destroy(expression);
+                    failed = True;
+                    break;
                 }
+
+                Stack_push(&ast->statements, &expression);
 
                 break;
             }
         }
+
+        if (failed)
+        {
+            while (!(self->token.tag == ';' || self->token.tag == Tag_END))
+            {
+                Parser_next_token(self);
+            }
+        }
     }
 
-    AST_print((AST*)(ast));
-    AST_destroy((AST*)(ast));
+    return (AST*)(ast);
 }
 
 void Parser_next_token(Parser* self)
@@ -714,7 +796,7 @@ AST* Parse_expression_root(Parser* self)
 
             if (self->token.tag != ')')
             {
-                Error("SyntaxError: Missing closing parenthesis\n");
+                LogError(self->token, "Expected ')'");
                 return NULL;
             }
 
@@ -757,7 +839,7 @@ AST* Parse_expression_root(Parser* self)
         }
         default:
         {
-            Error("SyntaxError: Expected a valid expression.\n");
+            LogError(self->token, "Invalid expression");
             return NULL;
         }
     }
@@ -765,17 +847,24 @@ AST* Parse_expression_root(Parser* self)
 
 AST* Parse_expression_postfix(Parser* self, AST* lhs)
 {
+    if (!lhs)
+    {
+        return NULL;
+    }
+
     Parser_next_token(self);
 
     switch (self->token.tag)
     {
         case '[':
         {
-            AST* rhs = Parse_expression0(self);
+            AST_Subscripting* subscripting = AST_Subscripting_create();
+            subscripting->lhs = lhs;
+            subscripting->rhs = Parse_expression0(self);
 
-            if (!rhs)
+            if (!subscripting->rhs)
             {
-                AST_destroy(lhs);
+                AST_destroy((AST*)(subscripting));
                 return NULL;
             }
 
@@ -783,39 +872,41 @@ AST* Parse_expression_postfix(Parser* self, AST* lhs)
 
             if (self->token.tag != ']')
             {
-                Error("SyntaxError: Missing closing brackets\n");
-                AST_destroy(lhs);
+                LogError(self->token, "Expected ']'");
+                AST_destroy((AST*)(subscripting));
                 return NULL;
             }
-
-            AST_Subscripting* subscripting = AST_Subscripting_create();
-            subscripting->lhs = lhs;
-            subscripting->rhs = rhs;
 
             return Parse_expression_postfix(self, (AST*)(subscripting));
         }
         case '(':
         {
-            AST* rhs = Parse_expression0(self);
-
-            if (!rhs)
-            {
-                AST_destroy(lhs);
-                return NULL;
-            }
+            AST_Call* call = AST_Call_create();
+            call->callee = lhs;
 
             Parser_next_token(self);
 
             if (self->token.tag != ')')
             {
-                Error("SyntaxError: Missing closing brackets\n");
-                AST_destroy(lhs);
-                return NULL;
-            }
+                Parser_push_token(self, self->token);
 
-            AST_Call* call = AST_Call_create();
-            call->callee = lhs;
-            call->argument = rhs;
+                call->argument = Parse_expression0(self);
+
+                if (!call->argument)
+                {
+                    AST_destroy((AST*)(call));
+                    return NULL;
+                }
+
+                Parser_next_token(self);
+
+                if (self->token.tag != ')')
+                {
+                    LogError(self->token, "Expected ')'");
+                    AST_destroy((AST*)(call));
+                    return NULL;
+                }
+            }
 
             return Parse_expression_postfix(self, (AST*)(call));
         }
@@ -825,7 +916,7 @@ AST* Parse_expression_postfix(Parser* self, AST* lhs)
 
             if (self->token.tag != Tag_ID)
             {
-                Error("SyntaxError: Expected an identifier\n");
+                LogError(self->token, "Expected an identifier");
                 AST_destroy(lhs);
                 return NULL;
             }
@@ -858,7 +949,7 @@ AST* Parse_statement(Parser* self)
 
             if (self->token.tag != '(')
             {
-                Error("SyntaxError: expected '('");
+                LogError(self->token, "Expected '('");
                 return NULL;
             }
 
@@ -866,21 +957,44 @@ AST* Parse_statement(Parser* self)
 
             if_->condition = Parse_expression0(self);
 
+            if (!if_->condition)
+            {
+                AST_destroy((AST*)(if_));
+                return NULL;
+            }
+
             Parser_next_token(self);
 
             if (self->token.tag != ')')
             {
-                Error("SyntaxError: expected ')'");
+                LogError(self->token, "Expected ')'");
+                AST_destroy((AST*)(if_));
                 return NULL;
             }
 
             if_->then = Parse_statement(self);
 
+            if (!if_->then)
+            {
+                AST_destroy((AST*)(if_));
+                return NULL;
+            }
+
             Parser_next_token(self);
 
-            if (self->token.tag != Tag_ELSE)
+            if (self->token.tag == Tag_ELSE)
             {
                 if_->else_ = Parse_statement(self);
+
+                if (!if_->else_)
+                {
+                    AST_destroy((AST*)(if_));
+                    return NULL;
+                }
+            }
+            else
+            {
+                Parser_push_token(self, self->token);
             }
 
             return (AST*)(if_);
@@ -891,7 +1005,7 @@ AST* Parse_statement(Parser* self)
 
             if (self->token.tag != '(')
             {
-                Error("SyntaxError: expected '('");
+                LogError(self->token, "Expected '('");
                 return NULL;
             }
 
@@ -899,15 +1013,28 @@ AST* Parse_statement(Parser* self)
 
             while_->condition = Parse_expression0(self);
 
+            if (!while_->condition)
+            {
+                AST_destroy((AST*)(while_));
+                return NULL;
+            }
+
             Parser_next_token(self);
 
             if (self->token.tag != ')')
             {
-                Error("SyntaxError: expected ')'");
+                LogError(self->token, "Expected ')'");
+                AST_destroy((AST*)(while_));
                 return NULL;
             }
 
             while_->then = Parse_statement(self);
+
+            if (!while_->then)
+            {
+                AST_destroy((AST*)(while_));
+                return NULL;
+            }
 
             return (AST*)(while_);
         }
@@ -926,6 +1053,11 @@ AST* Parse_statement(Parser* self)
 
             AST* expression = Parse_expression0(self);
 
+            if (!expression)
+            {
+                return NULL;
+            }
+
             Parser_next_token(self);
 
             if (self->token.tag == '=')
@@ -934,21 +1066,22 @@ AST* Parse_statement(Parser* self)
 
                 if (!rhs)
                 {
+                    AST_destroy(expression);
                     return NULL;
                 }
 
                 AST_Assign* assign = AST_Assign_create();
                 assign->lhs = expression;
                 assign->rhs = rhs;
-
                 expression = (AST*)(assign);
-            }
 
-            Parser_next_token(self);
+                Parser_next_token(self);
+            }
 
             if (self->token.tag != ';')
             {
-                Error("SyntaxError: expected ';'");
+                LogError(self->token, "Expected ';'");
+                AST_destroy(expression);
                 return NULL;
             }
 
@@ -975,6 +1108,22 @@ AST* Parse_block(Parser* self)
         }
 
         AST* statement = Parse_statement(self);
+
+        if (!statement)
+        {
+            while (!(self->token.tag == ';' || self->token.tag == '}'))
+            {
+                Parser_next_token(self);
+            }
+
+            if (self->token.tag == '}')
+            {
+                Parser_push_token(self, self->token);
+            }
+
+            continue;
+        }
+
         Stack_push(&block->statements, &statement);
     }
 
@@ -987,7 +1136,7 @@ AST* Parse_function(Parser* self)
 
     if (self->token.tag != '(')
     {
-        Error("SyntaxError: expected '('\n");
+        LogError(self->token, "Expected '('");
         return NULL;
     }
 
@@ -1005,7 +1154,8 @@ AST* Parse_function(Parser* self)
 
             if (self->token.tag != Tag_ID)
             {
-                Error("SyntaxError: expected an identifier");
+                LogError(self->token, "Expected an identifier");
+                AST_destroy((AST*)(function));
                 return NULL;
             }
 
@@ -1021,17 +1171,25 @@ AST* Parse_function(Parser* self)
 
         if (self->token.tag != ':')
         {
-            Error("SyntaxError: expected ':'");
+            LogError(self->token, "Expected ':'");
+            AST_destroy((AST*)(function));
             return NULL;
         }
 
         function->in_type = Parse_expression1(self);
 
+        if (!function->in_type)
+        {
+            AST_destroy((AST*)(function));
+            return NULL;
+        }
+
         Parser_next_token(self);
 
         if (self->token.tag != Tag_ARROW)
         {
-            Error("SyntaxError: expected '->'");
+            LogError(self->token, "Expected '->'");
+            AST_destroy((AST*)(function));
             return NULL;
         }
     }
@@ -1048,7 +1206,8 @@ AST* Parse_function(Parser* self)
 
             if (self->token.tag != Tag_ID)
             {
-                Error("SyntaxError: expected an identifier");
+                LogError(self->token, "Expected an identifier");
+                AST_destroy((AST*)(function));
                 return NULL;
             }
 
@@ -1064,17 +1223,25 @@ AST* Parse_function(Parser* self)
 
         if (self->token.tag != ':')
         {
-            Error("SyntaxError: expected ':'");
+            LogError(self->token, "Expected ':'");
+            AST_destroy((AST*)(function));
             return NULL;
         }
 
         function->out_type = Parse_expression1(self);
 
+        if (!function->out_type)
+        {
+            AST_destroy((AST*)(function));
+            return NULL;
+        }
+
         Parser_next_token(self);
 
         if (self->token.tag != ')')
         {
-            Error("SyntaxError: expected ')'\n");
+            LogError(self->token, "Expected ')'");
+            AST_destroy((AST*)(function));
             return NULL;
         }
     }
@@ -1083,11 +1250,18 @@ AST* Parse_function(Parser* self)
 
     if (self->token.tag != '{')
     {
-        Error("SyntaxError: expected '{'\n");
+        LogError(self->token, "Expected '{'");
+        AST_destroy((AST*)(function));
         return NULL;
     }
 
     function->body = (AST*)(Parse_block(self));
+
+    if (!function->body)
+    {
+        AST_destroy((AST*)(function));
+        return NULL;
+    }
 
     return (AST*)(function);
 }

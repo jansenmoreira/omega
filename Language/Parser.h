@@ -1,5 +1,8 @@
-#include <Parser/AST.h>
-#include <Parser/Lexer.h>
+#ifndef PARSER_H
+#define PARSER_H
+
+#include <Language/AST.h>
+#include <Language/Lexer.h>
 #include <Support/Console.h>
 #include <Support/Map.h>
 #include <Support/Performance.h>
@@ -11,6 +14,9 @@ typedef struct Parser
     Token token;
     Stack queue;
     size_t queue_it;
+    Boolean console;
 } Parser;
 
-void Parser_loop();
+AST* Parse(String path);
+
+#endif
