@@ -24,7 +24,6 @@ typedef struct Type
 typedef struct Type_Type
 {
     Type_ID type_id;
-    Type* type;
 } Type_Type;
 
 typedef struct Type_Float
@@ -77,8 +76,8 @@ typedef struct Type_Function
 {
     Type_ID type_id;
 
-    Stack params;
-    Type* return_type;
+    Type* input;
+    Type* output;
 } Type_Function;
 
 Type* type_u8;
@@ -107,5 +106,7 @@ void Type_destroy(Type* type);
 size_t Type_size(Type* type);
 
 Boolean Type_equal(Type* a, Type* b);
+
+void Type_print(Type* type);
 
 #endif

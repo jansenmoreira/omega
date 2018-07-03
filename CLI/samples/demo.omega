@@ -1,21 +1,14 @@
-/*
+// import "samples/other.omega";
 
-import "samples/other.omega";
-
-const a, b : int = 3;
-
-function (a, b : int, int -> a, b, c : int) {
-} (a, b, c);
-
-const c : int = 3;
-
-const d := 3;
-
-*/
-
-const t := int -> int;
+const a : u8, u8;
+const b : **u8;
+const b : u8 -> u8;
 
 
-function (->) {
-	while (a) a = a << 1;
-} ();
+const a : u8, u8 = b
+
+
+r1 = type u8
+r2 = type u8
+r3 = type r1, r2
+

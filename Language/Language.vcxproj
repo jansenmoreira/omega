@@ -52,7 +52,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
-    <ClInclude Include="Builder.h" />
+    <ClInclude Include="Interpreter.h" />
     <ClInclude Include="Lexer.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Types.h" />
@@ -61,7 +61,7 @@
     <ClCompile Include="AST.c" />
     <ClCompile Include="Lexer.c" />
     <ClCompile Include="Parser.c" />
-    <ClCompile Include="Builder.c" />
+    <ClCompile Include="Interpreter.c" />
     <ClCompile Include="Types.c" />
   </ItemGroup>
   <ItemGroup>

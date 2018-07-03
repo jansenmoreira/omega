@@ -83,7 +83,6 @@ Type_Type* Type_Type_create()
         Panic(Memory_Error);
     }
 
-    self->type = NULL;
     return self;
 }
 
@@ -156,8 +155,8 @@ Type_Function* Type_Function_create()
     }
 
     self->type_id = TYPE_FUNCTION;
-    self->params = Stack_create(sizeof(Type*));
-    self->return_type = NULL;
+    self->input = NULL;
+    self->output = NULL;
     return self;
 }
 
@@ -198,12 +197,8 @@ void Type_Struct_destroy(Type_Struct* self)
 
 void Type_Function_destroy(Type_Function* self)
 {
-    for (size_t i = 0; i < self->params.size; i++)
-    {
-        Type_destroy(*(Type**)Stack_get(&self->params, i));
-    }
-
-    Stack_destroy(&self->params);
+    Type_destroy(self->input);
+    Type_destroy(self->output);
     free(self);
 }
 
@@ -295,13 +290,8 @@ Type* Type_Copy(Type* type)
         {
             Type_Function* casted = (Type_Function*)type;
             Type_Function* copy = Type_Function_create();
-            copy->return_type = Type_Copy(casted->return_type);
-
-            for (size_t i = 1; i < casted->params.size; i++)
-            {
-                Type* field = Type_Copy(*(Type**)Stack_get(&casted->params, i));
-                Stack_push(&copy->params, &field);
-            }
+            copy->input = Type_Copy(casted->input);
+            copy->output = Type_Copy(casted->output);
 
             return (Type*)copy;
         }
@@ -491,26 +481,8 @@ Boolean Type_equal(Type* a, Type* b)
             Type_Function* ac = (Type_Function*)a;
             Type_Function* bc = (Type_Function*)b;
 
-            if (!Type_equal(ac->return_type, bc->return_type))
-            {
-                return False;
-            }
-
-            if (ac->params.size != bc->params.size)
-            {
-                return False;
-            }
-
-            for (size_t i = 0; i < ac->params.size; i++)
-            {
-                if (!Type_equal(*(Type**)Stack_get(&ac->params, i),
-                                *(Type**)Stack_get(&bc->params, i)))
-                {
-                    return False;
-                }
-            }
-
-            return True;
+            return Type_equal(ac->input, bc->input) &&
+                   Type_equal(ac->output, bc->output);
         }
         default:
         {
@@ -582,8 +554,6 @@ void Type_print(Type* type)
         {
             Type_Tuple* casted = (Type_Tuple*)type;
 
-            Print("[");
-
             Type_print(*(Type**)Stack_get(&casted->fields, 0));
 
             for (size_t i = 1; i < casted->fields.size; i++)
@@ -591,8 +561,6 @@ void Type_print(Type* type)
                 Print(", ");
                 Type_print(*(Type**)Stack_get(&casted->fields, i));
             }
-
-            Print("]");
 
             break;
         }
@@ -618,21 +586,11 @@ void Type_print(Type* type)
         {
             Type_Function* casted = (Type_Function*)type;
 
-            Print("(");
-
-            Type_print(*(Type**)Stack_get(&casted->params, 0));
-
-            for (size_t i = 1; i < casted->params.size; i++)
-            {
-                Print(", ");
-                Type_print(*(Type**)Stack_get(&casted->params, i));
-            }
+            Type_print(casted->input);
 
             Print(" -> ");
 
-            Type_print(casted->return_type);
-
-            Print(")");
+            Type_print(casted->output);
 
             break;
         }

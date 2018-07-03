@@ -74,7 +74,7 @@ typedef struct Lexer
 
 void Lexer_init();
 
-void Lexer_free();
+void Lexer_exit();
 
 Lexer Lexer_create(File* file);
 

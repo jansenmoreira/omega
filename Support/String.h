@@ -20,7 +20,7 @@ Boolean String_empty(String a);
 
 void String_init();
 
-void String_free();
+void String_exit();
 
 String String_new(const char* ptr, size_t size);
 

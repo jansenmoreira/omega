@@ -163,9 +163,17 @@ typedef struct AST_Map
 {
     AST_ID AST_id;
 
-    AST* params;
-    AST* result;
+    AST* input;
+    AST* output;
 } AST_Map;
+
+typedef struct AST_Array
+{
+    AST_ID AST_id;
+
+    AST* expression;
+    AST* size;
+} AST_Array;
 
 typedef struct AST_Tuple
 {

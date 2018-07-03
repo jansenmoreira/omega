@@ -1,19 +1,72 @@
 #include <Support/Console.h>
 #include <Support/File.h>
 
-Boolean File_open(File* self, String path)
+static Map files;
+
+void File_init()
 {
-    self->lines = Stack_create(sizeof(U64));
+    files = Map_create(sizeof(File*));
+}
+
+void File_exit()
+{
+    for (size_t i = 0; i < files.size; i++)
+    {
+        if (!String_empty(files.keys[i]))
+        {
+            File* self = ((File**)(files.values))[i];
+            Stack_destroy(&self->lines);
+            free(self->text);
+        }
+    }
+
+    Map_destroy(&files);
+}
+
+Boolean File_exists(String path)
+{
+    if (String_empty(path))
+    {
+        return False;
+    }
+
+    File** ptr = (File**)(Map_get(&files, path));
+
+    if (ptr && *ptr)
+    {
+        return True;
+    }
+
+    return False;
+}
+
+File* File_open(String path)
+{
+    if (String_empty(path))
+    {
+        return NULL;
+    }
+
+    File** ptr = (File**)(Map_get(&files, path));
+
+    if (ptr && *ptr)
+    {
+        return *ptr;
+    }
+
+    File* file = (File*)malloc(sizeof(File));
+
+    file->lines = Stack_create(sizeof(U64));
 
     FILE* stream;
 
     if (fopen_s(&stream, String_begin(path), "rb"))
     {
-        return False;
+        return NULL;
     }
 
     U64 value = 0;
-    Stack_push(&self->lines, &value);
+    Stack_push(&file->lines, &value);
 
     int c = fgetc(stream);
     int at = 0;
@@ -23,7 +76,7 @@ Boolean File_open(File* self, String path)
         if (c == '\n')
         {
             value = at + 1;
-            Stack_push(&self->lines, &value);
+            Stack_push(&file->lines, &value);
         }
     }
 
@@ -32,18 +85,18 @@ Boolean File_open(File* self, String path)
         Panic(Memory_Error);
     }
 
-    self->text = (char*)malloc(sizeof(char) * (at + 1));
+    file->text = (char*)malloc(sizeof(char) * (at + 1));
 
-    if (!self->text)
+    if (!file->text)
         Panic(Input_Output_Error);
 
-    self->text[at] = 0;
-    self->path = path;
+    file->text[at] = 0;
+    file->path = path;
 
     if (fseek(stream, 0, SEEK_SET))
         Panic(Input_Output_Error);
 
-    size_t read = fread(self->text, at, 1, stream);
+    size_t read = fread(file->text, at, 1, stream);
 
     if (read != at && ferror(stream))
         Panic(Input_Output_Error);
@@ -51,13 +104,9 @@ Boolean File_open(File* self, String path)
     if (fclose(stream) == EOF)
         Panic(Input_Output_Error);
 
-    return True;
-}
+    Map_set(&files, path, &file);
 
-void File_destroy(File* self)
-{
-    Stack_destroy(&self->lines);
-    free(self->text);
+    return file;
 }
 
 int File_utf_width = 32;

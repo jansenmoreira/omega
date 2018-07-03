@@ -1,6 +1,6 @@
 #include <Language/Parser.h>
 
-AST* Parser_top_level(Parser* self);
+AST* Parse_top_level(Parser* self);
 
 AST* Parse_expression0(Parser* self);
 AST* Parse_expression0_tail(Parser* self, AST* lhs);
@@ -66,16 +66,61 @@ AST* Parse(String path)
     self.queue = Stack_create(sizeof(Token));
     self.queue_it = 0;
 
-    File file;
-    if (!File_open(&file, path))
+    File* file = File_open(path);
+
+    if (!file)
     {
         Error("I/O.Error: \"%s\" not found!\n", String_begin(path));
         return NULL;
     }
 
-    self.lexer = Lexer_create(&file);
+    self.lexer = Lexer_create(file);
 
-    return Parser_top_level(&self);
+    AST_Program* program = AST_Program_create();
+
+    for (;;)
+    {
+        Parser_next_token(&self);
+
+        if (self.token.tag == Tag_END)
+        {
+            break;
+        }
+        else
+        {
+            Parser_push_token(&self, self.token);
+        }
+
+        AST* statement = Parse_top_level(&self);
+
+        if (!statement)
+        {
+            while (!(self.token.tag == ';' || self.token.tag == Tag_END))
+            {
+                Parser_next_token(&self);
+            }
+
+            if (self.token.tag == Tag_END)
+            {
+                Parser_push_token(&self, self.token);
+            }
+
+            continue;
+        }
+
+        if (statement->AST_id == AST_PROGRAM)
+        {
+            AST_Program* ast = (AST_Program*)(statement);
+            Stack_push_stack(&program->statements, &ast->statements);
+            Stack_destroy(&ast->statements);
+        }
+        else
+        {
+            Stack_push(&program->statements, &statement);
+        }
+    }
+
+    return (AST*)(program);
 }
 
 AST* Parse_declare(Parser* self)
@@ -162,126 +207,45 @@ AST* Parse_declare(Parser* self)
     return (AST*)(declaration);
 }
 
-AST* Parser_top_level(Parser* self)
+AST* Parse_top_level(Parser* self)
 {
-    AST_Program* ast = AST_Program_create();
+    Parser_next_token(self);
 
-    for (Boolean step = True; step;)
+    switch (self->token.tag)
     {
-        Parser_next_token(self);
-
-        Boolean failed = False;
-
-        switch (self->token.tag)
+        case Tag_IMPORT:
         {
-            case Tag_END:
+            Parser_next_token(self);
+
+            if (self->token.tag != Tag_LITERAL_STRING)
             {
-                step = False;
-                break;
+                LogError(self->token, "Expected a 'String Literal'");
+                return NULL;
             }
-            case Tag_IMPORT:
+
+            String path = self->token.lexeme;
+
+            Parser_next_token(self);
+
+            if (self->token.tag != ';')
             {
-                Parser_next_token(self);
-
-                if (self->token.tag != Tag_LITERAL_STRING)
-                {
-                    LogError(self->token, "Expected a 'String Literal'");
-                    failed = True;
-                    break;
-                }
-
-                String path = self->token.lexeme;
-
-                Parser_next_token(self);
-
-                if (self->token.tag != ';')
-                {
-                    LogError(self->token, "Expected ';'");
-                    failed = True;
-                    break;
-                }
-
-                AST* imported = Parse(path);
-
-                if (imported)
-                {
-                    Stack_push(&ast->statements, &imported);
-                }
-
-                break;
+                LogError(self->token, "Expected ';'");
+                return NULL;
             }
-            case Tag_VAR:
-            case Tag_CONST:
+
+            if (File_exists(path))
             {
-                AST* declaration = Parse_declare(self);
-
-                if (!declaration)
-                {
-                    failed = True;
-                    break;
-                }
-
-                Stack_push(&ast->statements, &declaration);
-
-                break;
+                return (AST*)(AST_Program_create());
             }
-            default:
-            {
-                Parser_push_token(self, self->token);
 
-                AST* expression = Parse_expression0(self);
-
-                if (!expression)
-                {
-                    failed = True;
-                    break;
-                }
-
-                Parser_next_token(self);
-
-                if (self->token.tag == '=')
-                {
-                    AST* rhs = Parse_expression0(self);
-
-                    if (!rhs)
-                    {
-                        AST_destroy(expression);
-                        failed = True;
-                        break;
-                    }
-
-                    AST_Assign* assign = AST_Assign_create();
-                    assign->lhs = expression;
-                    assign->rhs = rhs;
-                    expression = (AST*)(assign);
-
-                    Parser_next_token(self);
-                }
-
-                if (self->token.tag != ';')
-                {
-                    LogError(self->token, "Expected ';'");
-                    AST_destroy(expression);
-                    failed = True;
-                    break;
-                }
-
-                Stack_push(&ast->statements, &expression);
-
-                break;
-            }
+            return Parse(path);
         }
-
-        if (failed)
+        default:
         {
-            while (!(self->token.tag == ';' || self->token.tag == Tag_END))
-            {
-                Parser_next_token(self);
-            }
+            Parser_push_token(self, self->token);
+            return Parse_statement(self);
         }
     }
-
-    return (AST*)(ast);
 }
 
 void Parser_next_token(Parser* self)
@@ -332,10 +296,10 @@ AST* Parse_expression0_tail(Parser* self, AST* lhs)
                 return NULL;
             }
 
-            AST_Map* binary = AST_Map_create();
-            binary->params = lhs;
-            binary->result = rhs;
-            return Parse_expression0_tail(self, (AST*)binary);
+            AST_Map* map = AST_Map_create();
+            map->input = lhs;
+            map->output = rhs;
+            return Parse_expression0_tail(self, (AST*)(map));
         }
         default:
         {
@@ -836,6 +800,10 @@ AST* Parse_expression_root(Parser* self)
             AST_Reference* reference_expression = AST_Reference_create();
             reference_expression->id = self->token.lexeme;
             return (AST*)reference_expression;
+        }
+        case Tag_ARROW:
+        {
+            return (AST*)(AST_Map_create());
         }
         default:
         {

@@ -168,7 +168,7 @@ void String_init()
     manager.buffer[0] = 0;
 }
 
-void String_free()
+void String_exit()
 {
     free(manager.buffer);
     free(manager.set);

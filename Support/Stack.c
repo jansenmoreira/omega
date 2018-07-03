@@ -82,8 +82,7 @@ void Stack_push_stack(Stack* self, Stack* other)
         Stack_reserve(self, (self->size + other->size) << 1);
     }
 
-    memcpy(self->buffer + self->sizeof_value * self->size,
-           other->buffer + self->sizeof_value * other->size,
+    memcpy(self->buffer + self->sizeof_value * self->size, other->buffer,
            self->sizeof_value * other->size);
     self->size += other->size;
 }

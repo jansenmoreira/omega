@@ -39,8 +39,8 @@ AST_Map* AST_Map_create()
 {
     AST_Map* self = (AST_Map*)malloc(sizeof(AST_Map));
     self->AST_id = AST_MAP;
-    self->params = NULL;
-    self->result = NULL;
+    self->input = NULL;
+    self->output = NULL;
     return self;
 }
 
@@ -257,8 +257,8 @@ void AST_destroy(AST* self)
         case AST_MAP:
         {
             AST_Map* ast = (AST_Map*)(self);
-            AST_destroy(ast->params);
-            AST_destroy(ast->result);
+            AST_destroy(ast->input);
+            AST_destroy(ast->output);
             break;
         }
         case AST_WHILE:
@@ -504,10 +504,10 @@ void AST_print_tree(AST* self, size_t identation)
             AST_Map* ast = (AST_Map*)(self);
             Print("%*s<Map>\n", spaces, "");
             Print("%*s<Params>\n", spaces + width, "");
-            AST_print_tree(ast->params, identation + 2);
+            AST_print_tree(ast->input, identation + 2);
             Print("%*s</Params>\n", spaces + width, "");
             Print("%*s<Result>\n", spaces + width, "");
-            AST_print_tree(ast->result, identation + 2);
+            AST_print_tree(ast->output, identation + 2);
             Print("%*s</Result>\n", spaces + width, "");
             Print("%*s<Map>\n", spaces, "");
             break;

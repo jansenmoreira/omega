@@ -108,7 +108,7 @@ void Lexer_init()
     Map_set(&keywords, s_function, &t_function);
 }
 
-void Lexer_free()
+void Lexer_exit()
 {
     Map_destroy(&keywords);
 }
