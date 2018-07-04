@@ -55,6 +55,8 @@ typedef enum Tag
     Tag_UNKNOW,
 } Tag;
 
+char* Operators[Tag_UNKNOW];
+
 typedef struct Token
 {
     size_t begin;

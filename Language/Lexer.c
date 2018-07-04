@@ -37,6 +37,25 @@ Map keywords;
 
 void Lexer_init()
 {
+    Operators['|'] = "|";
+    Operators['^'] = "^";
+    Operators['&'] = "&";
+    Operators[Tag_EQ] = "==";
+    Operators[Tag_NE] = "!=";
+    Operators['>'] = ">";
+    Operators['<'] = "<";
+    Operators[Tag_GE] = ">=";
+    Operators[Tag_LE] = "<=";
+    Operators[Tag_RSHIFT] = "<<";
+    Operators[Tag_LSHIFT] = ">>";
+    Operators['+'] = "+";
+    Operators['-'] = "-";
+    Operators['*'] = "*";
+    Operators['/'] = "/";
+    Operators['%'] = "%";
+    Operators['!'] = "!";
+    Operators['~'] = "~";
+
     keywords = Map_create(sizeof(int));
 
     String s_if = String_new("if", 2);

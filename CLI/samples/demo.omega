@@ -1,14 +1,12 @@
 // import "samples/other.omega";
 
-const a : u8, u8;
-const b : **u8;
-const b : u8 -> u8;
+type u64 as int;
 
+type { a : int, b : u8, c : u64 } as C;
 
-const a : u8, u8 = b
+const d : *<u8, <u8, int>, int>;
 
-
-r1 = type u8
-r2 = type u8
-r3 = type r1, r2
-
+function main (a : **int, b : int -> c : int)
+{
+	d[b][1][1];
+}

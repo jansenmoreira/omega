@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <Support/Map.h>
 #include <Support/Stack.h>
 #include <Support/String.h>
 
@@ -13,18 +14,12 @@ typedef enum Type_ID
     TYPE_TUPLE,
     TYPE_STRUCT,
     TYPE_FUNCTION,
-    TYPE_TYPE,
 } Type_ID;
 
 typedef struct Type
 {
     Type_ID type_id;
 } Type;
-
-typedef struct Type_Type
-{
-    Type_ID type_id;
-} Type_Type;
 
 typedef struct Type_Float
 {
@@ -45,7 +40,7 @@ typedef struct Type_Array
 {
     Type_ID type_id;
 
-    Type* type;
+    Type* value;
     size_t size;
 } Type_Array;
 
@@ -53,7 +48,7 @@ typedef struct Type_Pointer
 {
     Type_ID type_id;
 
-    Type* type;
+    Type* value;
 } Type_Pointer;
 
 typedef struct Type_Tuple
@@ -61,22 +56,25 @@ typedef struct Type_Tuple
     Type_ID type_id;
 
     Stack fields;
+    Stack offsets;
+    size_t alignment;
+    size_t size;
 } Type_Tuple;
 
 typedef struct Type_Struct
 {
     Type_ID type_id;
 
-    String id;
-    Stack field_types;
-    Stack field_ids;
+    Map ids;
+    Stack ordered;
+    Type_Tuple* tuple;
 } Type_Struct;
 
 typedef struct Type_Function
 {
     Type_ID type_id;
 
-    Type* input;
+    Stack inputs;
     Type* output;
 } Type_Function;
 
@@ -92,16 +90,23 @@ Type* type_fp32;
 Type* type_fp64;
 Type* type_type;
 
-Type_Type* Type_Type_create();
 Type_Array* Type_Array_create();
 Type_Pointer* Type_Pointer_create();
-Type_Struct* Type_Struct_create();
+
 Type_Tuple* Type_Tuple_create();
+size_t Type_Tuple_push_field(Type_Tuple* self, Type* type);
+
+Type_Struct* Type_Struct_create();
+Boolean Type_Struct_field_exists(Type_Struct* self, String id);
+size_t Type_Struct_push_field(Type_Struct* self, String id, Type* type);
+
 Type_Function* Type_Function_create();
 
-Type* Type_Copy(Type* type);
+Type* Type_copy(Type* type);
 
 void Type_destroy(Type* type);
+
+size_t Type_alignment(Type* type);
 
 size_t Type_size(Type* type);
 

@@ -14,7 +14,6 @@ typedef struct Parser
     Token token;
     Stack queue;
     size_t queue_it;
-    Boolean console;
 } Parser;
 
 AST* Parse(String path);
