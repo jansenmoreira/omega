@@ -170,7 +170,7 @@ AST_Integer_Literal* AST_Integer_Literal_create()
 
     self->AST_id = AST_INTEGER_LITERAL;
     self->type = NULL;
-    self->value = String_new(NULL, 0);
+    self->value = 0;
     return self;
 }
 
@@ -184,9 +184,9 @@ AST_Real_Literal* AST_Real_Literal_create()
         Panic(Memory_Error);
     }
 
-    self->AST_id = AST_REAL_LITERAL;
+    self->AST_id = AST_FLOAT_LITERAL;
     self->type = NULL;
-    self->value = String_new(NULL, 0);
+    self->value = 0.0;
     return self;
 }
 
@@ -559,15 +559,15 @@ void AST_print_tree(AST* self, size_t identation)
             AST_Integer_Literal* ast = (AST_Integer_Literal*)(self);
             Print("%*s<IntegerLiteral type=\"", spaces, "");
             Type_print(ast->type);
-            Print("\">%s</IntegerLiteral>\n", String_begin(ast->value));
+            Print("\">%" PRIu64 "</IntegerLiteral>\n", ast->value);
             break;
         }
-        case AST_REAL_LITERAL:
+        case AST_FLOAT_LITERAL:
         {
             AST_Real_Literal* ast = (AST_Real_Literal*)(self);
             Print("%*s<RealLiteral type=\"", spaces, "");
             Type_print(ast->type);
-            Print("\">%s</ RealLiteral>\n", String_begin(ast->value));
+            Print("\">%lf</ RealLiteral>\n", ast->value);
             break;
         }
         case AST_STRING_LITERAL:

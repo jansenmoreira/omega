@@ -22,7 +22,7 @@ typedef enum AST_ID
     AST_BINARY,
     AST_UNARY,
     AST_INTEGER_LITERAL,
-    AST_REAL_LITERAL,
+    AST_FLOAT_LITERAL,
     AST_STRING_LITERAL,
     AST_STORAGE,
     AST_ADDRESS,
@@ -148,7 +148,7 @@ typedef struct AST_Integer_Literal
     AST_ID AST_id;
     Type* type;
 
-    String value;
+    U64 value;
 } AST_Integer_Literal;
 
 typedef struct AST_Real_Literal
@@ -156,7 +156,7 @@ typedef struct AST_Real_Literal
     AST_ID AST_id;
     Type* type;
 
-    String value;
+    FP64 value;
 } AST_Real_Literal;
 
 typedef struct AST_String_Literal

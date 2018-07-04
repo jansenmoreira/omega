@@ -19,6 +19,76 @@ static void LogError(Token token, const char* format, ...)
     va_end(args);
 }
 
+static U64 do_operation_integer(Tag op, U64 a, U64 b)
+{
+    switch (op)
+    {
+        case '|':
+            return a | b;
+        case '^':
+            return a ^ b;
+        case '&':
+            return a & b;
+        case Tag_EQ:
+            return a == b;
+        case Tag_NE:
+            return a != b;
+        case '>':
+            return a > b;
+        case '<':
+            return a < b;
+        case Tag_GE:
+            return a >= b;
+        case Tag_LE:
+            return a <= b;
+        case Tag_RSHIFT:
+            return a >> b;
+        case Tag_LSHIFT:
+            return a << b;
+        case '+':
+            return a + b;
+        case '-':
+            return a + b;
+        case '*':
+            return a * b;
+        case '/':
+            return a / b;
+        case '%':
+            return a % b;
+    }
+
+    return 0;
+}
+
+static double do_operation_real(Tag op, double a, double b)
+{
+    switch (op)
+    {
+        case Tag_EQ:
+            return a == b;
+        case Tag_NE:
+            return a != b;
+        case '>':
+            return a > b;
+        case '<':
+            return a < b;
+        case Tag_GE:
+            return a >= b;
+        case Tag_LE:
+            return a <= b;
+        case '+':
+            return a + b;
+        case '-':
+            return a + b;
+        case '*':
+            return a * b;
+        case '/':
+            return a / b;
+    }
+
+    return 0;
+}
+
 static String u8_type_name;
 static String u16_type_name;
 static String u32_type_name;
@@ -133,8 +203,7 @@ Boolean Table_set_symbol(String id, Symbol symbol)
             table.local->offset = symbol.offset + Type_size(symbol.type);
             Map_set(&table.local->symbols, id, &symbol);
 
-            // Print("%s => local offset %llu\n", String_begin(id),
-            // symbol.offset);
+            Print("%s => local offset %llu\n", String_begin(id), symbol.offset);
             break;
         }
         case SYMBOL_GLOBAL_VAR:
@@ -145,28 +214,28 @@ Boolean Table_set_symbol(String id, Symbol symbol)
             table.global_offset = symbol.offset + Type_size(symbol.type);
             Map_set(&table.global, id, &symbol);
 
-            // Print("%s => global offset %llu\n", String_begin(id),
-            //    symbol.offset);
-            //         break;
+            Print("%s => global offset %llu\n", String_begin(id),
+                  symbol.offset);
+            break;
         }
         case SYMBOL_FUNCTION:
         {
             symbol.offset = function_last_id++;
             Map_set(&table.global, id, &symbol);
 
-            // Print("%s => function offset %llu ", String_begin(id),
-            //      symbol.offset);
-            // Type_print(symbol.type);
-            // Print("\n");
+            Print("%s => function offset %llu ", String_begin(id),
+                  symbol.offset);
+            Type_print(symbol.type);
+            Print("\n");
             break;
         }
         case SYMBOL_TYPE:
         {
             Map_set(&table.global, id, &symbol);
 
-            // Print("%s => type ", String_begin(id));
-            // Type_print(symbol.type);
-            // Print("\n");
+            Print("%s => type ", String_begin(id));
+            Type_print(symbol.type);
+            Print("\n");
             break;
         }
     }
@@ -1378,6 +1447,27 @@ AST_Expression* Parse_expression8_tail(Parser* self, AST_Expression* lhs)
                 return NULL;
             }
 
+            if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                rhs->type->type_id == TYPE_INTEGER)
+            {
+                lhs->type = rhs->type;
+            }
+            else if (rhs->AST_id == AST_INTEGER_LITERAL &&
+                     lhs->type->type_id == TYPE_INTEGER)
+            {
+                rhs->type = lhs->type;
+            }
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->type->type_id == TYPE_FLOAT)
+            {
+                lhs->type = rhs->type;
+            }
+            else if (rhs->AST_id == AST_FLOAT_LITERAL &&
+                     lhs->type->type_id == TYPE_FLOAT)
+            {
+                rhs->type = lhs->type;
+            }
+
             if (!Type_equal(lhs->type, rhs->type))
             {
                 LogError(token, "Incompatible Types");
@@ -1388,6 +1478,189 @@ AST_Expression* Parse_expression8_tail(Parser* self, AST_Expression* lhs)
                 Print("\n");
                 AST_destroy((AST*)rhs);
                 return NULL;
+            }
+
+            if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                rhs->AST_id == AST_INTEGER_LITERAL)
+            {
+                AST_Integer_Literal* lhs_lit = (AST_Integer_Literal*)(lhs);
+                AST_Integer_Literal* rhs_lit = (AST_Integer_Literal*)(rhs);
+
+                lhs_lit->value =
+                    do_operation_integer(op, lhs_lit->value, rhs_lit->value);
+
+                AST_destroy((AST*)rhs);
+
+                return Parse_expression9_tail(self, lhs);
+            }
+
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->AST_id == AST_FLOAT_LITERAL)
+            {
+                AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                AST_Real_Literal* rhs_lit = (AST_Real_Literal*)(rhs);
+
+                lhs_lit->value =
+                    do_operation_real(op, lhs_lit->value, rhs_lit->value);
+
+                AST_destroy((AST*)rhs);
+                return Parse_expression9_tail(self, lhs);
+            }
+
+            else if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                     rhs->AST_id == AST_BINARY)
+            {
+                AST_Binary* bin = (AST_Binary*)(rhs);
+
+                if (bin->op == '+')
+                {
+                    if (bin->lhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->lhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            bin->op, lhs_lit->value, rhs_lit->value);
+
+                        bin->op = op;
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_BINARY &&
+                     rhs->AST_id == AST_INTEGER_LITERAL)
+            {
+                AST_Binary* bin = (AST_Binary*)(lhs);
+
+                if (bin->op == '+')
+                {
+                    if (bin->lhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(bin->lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(rhs);
+
+                        lhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(rhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            bin->op, lhs_lit->value, rhs_lit->value);
+
+                        bin->op = op;
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->AST_id == AST_BINARY)
+            {
+                AST_Binary* bin = (AST_Binary*)(rhs);
+
+                if (bin->op == '+')
+                {
+                    if (bin->lhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->lhs);
+
+                        rhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_real(
+                            bin->op, lhs_lit->value, rhs_lit->value);
+
+                        bin->op = op;
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_BINARY &&
+                     rhs->AST_id == AST_FLOAT_LITERAL)
+            {
+                AST_Binary* bin = (AST_Binary*)(lhs);
+
+                if (bin->op == '+')
+                {
+                    if (bin->lhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit =
+                            (AST_Real_Literal*)(bin->lhs);
+                        AST_Real_Literal* rhs_lit = (AST_Real_Literal*)(rhs);
+
+                        lhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(rhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_real(
+                            bin->op, lhs_lit->value, rhs_lit->value);
+
+                        bin->op = op;
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                }
             }
 
             AST_Binary* binary = AST_Binary_create();
@@ -1435,6 +1708,27 @@ AST_Expression* Parse_expression9_tail(Parser* self, AST_Expression* lhs)
                 return NULL;
             }
 
+            if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                rhs->type->type_id == TYPE_INTEGER)
+            {
+                lhs->type = rhs->type;
+            }
+            else if (rhs->AST_id == AST_INTEGER_LITERAL &&
+                     lhs->type->type_id == TYPE_INTEGER)
+            {
+                rhs->type = lhs->type;
+            }
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->type->type_id == TYPE_FLOAT)
+            {
+                lhs->type = rhs->type;
+            }
+            else if (rhs->AST_id == AST_FLOAT_LITERAL &&
+                     lhs->type->type_id == TYPE_FLOAT)
+            {
+                rhs->type = lhs->type;
+            }
+
             if (!Type_equal(lhs->type, rhs->type))
             {
                 LogError(token, "Incompatible Types");
@@ -1445,6 +1739,195 @@ AST_Expression* Parse_expression9_tail(Parser* self, AST_Expression* lhs)
                 Print("\n");
                 AST_destroy((AST*)rhs);
                 return NULL;
+            }
+
+            if ((op == '%' && lhs->type->type_id == TYPE_FLOAT) ||
+                (lhs->type->type_id != TYPE_INTEGER &&
+                 rhs->type->type_id != TYPE_FLOAT))
+            {
+                LogError(token, "Expression not valid", Operators[op]);
+                Print("  ");
+                Type_print(lhs->type);
+                Print(" %s ", Operators[token.tag]);
+                Type_print(rhs->type);
+                Print("\n");
+                AST_destroy((AST*)rhs);
+                return NULL;
+            }
+
+            if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                rhs->AST_id == AST_INTEGER_LITERAL)
+            {
+                AST_Integer_Literal* lhs_lit = (AST_Integer_Literal*)(lhs);
+                AST_Integer_Literal* rhs_lit = (AST_Integer_Literal*)(rhs);
+
+                lhs_lit->value =
+                    do_operation_integer(op, lhs_lit->value, rhs_lit->value);
+
+                AST_destroy((AST*)rhs);
+
+                return Parse_expression9_tail(self, lhs);
+            }
+
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->AST_id == AST_FLOAT_LITERAL)
+            {
+                AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                AST_Real_Literal* rhs_lit = (AST_Real_Literal*)(rhs);
+
+                lhs_lit->value =
+                    do_operation_real(op, lhs_lit->value, rhs_lit->value);
+
+                AST_destroy((AST*)rhs);
+                return Parse_expression9_tail(self, lhs);
+            }
+
+            else if (lhs->AST_id == AST_INTEGER_LITERAL &&
+                     rhs->AST_id == AST_BINARY)
+            {
+                AST_Binary* bin = (AST_Binary*)(rhs);
+
+                if (bin->op == '*')
+                {
+                    if (bin->lhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->lhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_BINARY &&
+                     rhs->AST_id == AST_INTEGER_LITERAL)
+            {
+                AST_Binary* bin = (AST_Binary*)(lhs);
+
+                if (bin->op == '*')
+                {
+                    if (bin->lhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(bin->lhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(rhs);
+
+                        lhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_INTEGER_LITERAL)
+                    {
+                        AST_Integer_Literal* lhs_lit =
+                            (AST_Integer_Literal*)(rhs);
+                        AST_Integer_Literal* rhs_lit =
+                            (AST_Integer_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_integer(
+                            op, lhs_lit->value, rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_FLOAT_LITERAL &&
+                     rhs->AST_id == AST_BINARY)
+            {
+                AST_Binary* bin = (AST_Binary*)(rhs);
+
+                if (bin->op == '*' || bin->op == '/')
+                {
+                    if (bin->lhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->lhs);
+
+                        rhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(lhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)lhs);
+
+                        return Parse_expression9_tail(self, rhs);
+                    }
+                }
+            }
+
+            else if (lhs->AST_id == AST_BINARY &&
+                     rhs->AST_id == AST_FLOAT_LITERAL)
+            {
+                AST_Binary* bin = (AST_Binary*)(lhs);
+
+                if (bin->op == '*' || bin->op == '/')
+                {
+                    if (bin->lhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit =
+                            (AST_Real_Literal*)(bin->lhs);
+                        AST_Real_Literal* rhs_lit = (AST_Real_Literal*)(rhs);
+
+                        lhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                    else if (bin->rhs->AST_id == AST_FLOAT_LITERAL)
+                    {
+                        AST_Real_Literal* lhs_lit = (AST_Real_Literal*)(rhs);
+                        AST_Real_Literal* rhs_lit =
+                            (AST_Real_Literal*)(bin->rhs);
+
+                        rhs_lit->value = do_operation_real(op, lhs_lit->value,
+                                                           rhs_lit->value);
+
+                        AST_destroy((AST*)rhs);
+
+                        return Parse_expression9_tail(self, lhs);
+                    }
+                }
             }
 
             AST_Binary* binary = AST_Binary_create();
@@ -1587,22 +2070,21 @@ AST_Expression* Parse_expression_root(Parser* self)
         case Tag_LITERAL_INTEGER:
         {
             AST_Integer_Literal* lit = AST_Integer_Literal_create();
-            lit->value = self->token.lexeme;
+            lit->value = strtoull(String_begin(self->token.lexeme), NULL, 10);
             lit->type = (Type*)type_u64;
             return (AST_Expression*)lit;
         }
         case Tag_LITERAL_CHAR:
         {
             AST_Integer_Literal* lit = AST_Integer_Literal_create();
-            lit->value =
-                String_fmt("%" PRIu8 "", String_begin(self->token.lexeme)[0]);
+            lit->value = String_begin(self->token.lexeme)[0];
             lit->type = (Type*)type_u8;
             return (AST_Expression*)lit;
         }
         case Tag_LITERAL_REAL:
         {
             AST_Real_Literal* lit = AST_Real_Literal_create();
-            lit->value = self->token.lexeme;
+            lit->value = atof(String_begin(self->token.lexeme));
             lit->type = (Type*)type_fp64;
             return (AST_Expression*)lit;
         }
@@ -1690,11 +2172,9 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                     {
                         AST_Integer_Literal* lit = (AST_Integer_Literal*)(rhs);
 
-                        size_t offset =
-                            strtoull(String_begin(lit->value), NULL, 10);
+                        size_t offset = lit->value;
 
-                        lit->value =
-                            String_fmt("%llu", Type_size(type->value) * offset);
+                        lit->value = Type_size(type->value) * offset;
 
                         address->offset = rhs;
                     }
@@ -1702,7 +2182,7 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                     {
                         AST_Binary* offset = AST_Binary_create();
                         AST_Integer_Literal* lit = AST_Integer_Literal_create();
-                        lit->value = String_fmt("%llu", Type_size(type->value));
+                        lit->value = Type_size(type->value);
                         offset->op = '*';
                         offset->lhs = rhs;
                         offset->rhs = (AST_Expression*)lit;
@@ -1730,8 +2210,7 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                     {
                         AST_Storage* storage = (AST_Storage*)(lhs);
 
-                        size_t index =
-                            strtoull(String_begin(lit->value), NULL, 10);
+                        size_t index = lit->value;
 
                         if (index > tuple->fields.size)
                         {
@@ -1755,8 +2234,7 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                     {
                         AST_Address* address = (AST_Address*)(lhs);
 
-                        size_t index =
-                            strtoull(String_begin(lit->value), NULL, 10);
+                        size_t index = lit->value;
 
                         if (index > tuple->fields.size)
                         {
@@ -1778,11 +2256,9 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                             AST_Integer_Literal* lit =
                                 (AST_Integer_Literal*)(address->offset);
 
-                            size_t lit_offset =
-                                strtoull(String_begin(lit->value), NULL, 10);
+                            size_t lit_offset = lit->value;
 
-                            lit->value =
-                                String_fmt("%llu", lit_offset + offset);
+                            lit->value = lit_offset + offset;
 
                             address->offset = (AST_Expression*)(lit);
                         }
@@ -1791,7 +2267,7 @@ AST_Expression* Parse_expression_postfix(Parser* self, AST_Expression* lhs)
                             AST_Binary* bin = AST_Binary_create();
                             AST_Integer_Literal* lit =
                                 AST_Integer_Literal_create();
-                            lit->value = String_fmt("%llu", offset);
+                            lit->value = offset;
                             bin->op = '*';
                             bin->lhs = address->offset;
                             bin->rhs = (AST_Expression*)lit;
